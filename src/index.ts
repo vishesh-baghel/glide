@@ -1,12 +1,17 @@
 import { Probot } from "probot";
+// import main from "./main";
 
 export = (app: Probot) => {
+  app.log.info("Yay! glide bot was loaded");
+
   app.on("issues.opened", async (context) => {
     const issueComment = context.issue({
       body: "Thanks for opening this issue!",
     });
     await context.octokit.issues.createComment(issueComment);
   });
+
+  // main(app);
   // For more information on building apps:
   // https://probot.github.io/docs/
 
