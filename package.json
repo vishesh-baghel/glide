@@ -13,10 +13,12 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "probot run ./lib/index.js",
+    "start": "probot run app.js",
     "test": "jest"
   },
   "dependencies": {
+    "@netlify/functions": "^2.4.1",
+    "@probot/adapter-aws-lambda-serverless": "^3.0.4",
     "mongoose": "^8.0.3",
     "node": "^20.10.0",
     "probot": "^12.2.4"
