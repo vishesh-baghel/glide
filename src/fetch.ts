@@ -1,89 +1,88 @@
 import { Octokit } from "octokit";
-import { createAppAuth } from "@octokit/auth-app";
+import { RequestParameters } from "@octokit/types";
 import { Probot } from "probot";
-import { App, createNodeMiddleware } from "@octokit/app";
 
-const authToken = process.env.GITHUB_ACCESS_TOKEN;
-const privateKey = process.env.PRIVATE_KEY;
-const appId = process.env.APP_ID;
+const token = process.env.GITHUB_ACCESS_TOKEN;
 
-const octokit = new Octokit({
-  auth: authToken,
-  userAgent: "glide-bot v1.0.0",
-  previews: ["jean-grey", "symmetra"],
-  log: {
-    debug: () => {},
-    info: () => {},
-    warn: console.warn,
-    error: console.error,
-  },
+const octokitApp = new Octokit({
+  auth: token,
 });
 
-// const app = new App({
-//   appId: 123,
-//   privateKey: privateKey,
-//   oauth: {
-//     clientId: "0123",
-//     clientSecret: "0123secret",
+export default function fetchDetails(
+  app: Probot,
+  endpoint: string,
+  parameters: RequestParameters
+) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      app.log.info("fetching details for resource endpoint: " + endpoint);
+      const data = await octokitApp.request(endpoint, parameters);
+
+      resolve(data);
+    } catch (err: any) {
+      app.log.error(
+        `Error while fetching resource details for resource url: ${endpoint}`
+      );
+      reject(err);
+    }
+  });
+}
+
+// const octokit = new Octokit({
+//   auth: "YOUR-TOKEN",
+// });
+
+// await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+//   owner: "OWNER",
+//   repo: "REPO",
+//   pull_number: "PULL_NUMBER",
+//   headers: {
+//     "X-GitHub-Api-Version": "2022-11-28",
 //   },
-//   webhooks: {
-//     secret: "secret",
+// });
+
+// // Octokit.js
+// // https://github.com/octokit/core.js#readme
+// const octokit = new Octokit({
+//   auth: "YOUR-TOKEN",
+// });
+
+// await octokit.request("GET /repos/{owner}/{repo}/commits", {
+//   owner: "OWNER",
+//   repo: "REPO",
+//   headers: {
+//     "X-GitHub-Api-Version": "2022-11-28",
 //   },
 // });
 
-// const { data } = await app.octokit.request("/app");
-// console.log("authenticated as %s", data.name);
-// for await (const { installation } of app.eachInstallation.iterator()) {
-//   for await (const { octokit, repository } of app.eachRepository.iterator({
-//     installationId: installation.id,
-//   })) {
-//     await octokit.request("POST /repos/{owner}/{repo}/dispatches", {
-//       owner: repository.owner.login,
-//       repo: repository.name,
-//       event_type: "my_event",
-//     });
-//   }
-// }
-
-// app.webhooks.on("issues.opened", async ({ octokit, payload }) => {
-//   await octokit.request(
-//     "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
-//     {
-//       owner: payload.repository.owner.login,
-//       repo: payload.repository.name,
-//       issue_number: payload.issue.number,
-//       body: "Hello World!",
-//     }
-//   );
+// // Octokit.js
+// // https://github.com/octokit/core.js#readme
+// const octokit = new Octokit({
+//   auth: "YOUR-TOKEN",
 // });
 
-// app.oauth.on("token", async ({ token, octokit }) => {
-//   const { data } = await octokit.request("GET /user");
-//   console.log(`Token retrieved for ${data.login}`);
+// await octokit.request(
+//   "GET /repos/{owner}/{repo}/issues/{issue_number}/labels",
+//   {
+//     owner: "OWNER",
+//     repo: "REPO",
+//     issue_number: "ISSUE_NUMBER",
+//     headers: {
+//       "X-GitHub-Api-Version": "2022-11-28",
+//     },
+//   }
+// );
+
+// Octokit.js
+// https://github.com/octokit/core.js#readme
+// const octokit = new Octokit({
+//   auth: "YOUR-TOKEN",
 // });
 
-// require("http").createServer(createNodeMiddleware(app)).listen(3000);
-// // can now receive requests at /api/github/*
-
-const octokitAppAuth = new Octokit({
-  authStrategy: createAppAuth,
-  auth: {
-    appId: appId,
-    privateKey: privateKey,
-    // installationId:
-  },
-});
-
-// async function fetchDetails(app: Probot, endpoint: String): Promise<> {
-//   try {
-//     app.log.info("fetching details for resource endpoint: " + endpoint);
-//     const { data } = await octokitAppAuth.request();
-
-//     return data;
-//   } catch (err: any) {
-//     app.log.error({
-//       message: `Error while fetching resource details for resource url: ${endpoint}`,
-//     });
-//     app.log.error(err);
-//   }
-// }
+// await octokit.request("GET /repos/{owner}/{repo}/issues", {
+//   owner: "OWNER",
+//   repo: "REPO",
+//   headers: {
+//     "X-GitHub-Api-Version": "2022-11-28",
+//   },
+// });

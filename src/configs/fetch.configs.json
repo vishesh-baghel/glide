@@ -1,0 +1,8 @@
+{
+  "endpoints": {
+    "app_details": "/app",
+    "all_installations_list": "/app/installations",
+    "all_issues": "GET /repos/{owner}/{repo}/issues",
+    "all_commits": "GET /repos/{owner}/{repo}/commits"
+  }
+}
