@@ -3,6 +3,15 @@
     "app_details": "/app",
     "all_installations_list": "/app/installations",
     "all_issues": "GET /repos/{owner}/{repo}/issues",
-    "all_commits": "GET /repos/{owner}/{repo}/commits"
+    "get_issue": "GET /repos/{owner}/{repo}/issues/{issue_number}",
+    "all_commits": "GET /repos/{owner}/{repo}/commits",
+    "all_affected_files_in_pr": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files"
+  },
+  "all_issues": {
+    "endpoint": "GET /repos/{owner}/{repo}/issues",
+    "label_bug": "bug",
+    "state_closed": "closed",
+    "per_page": 50,
+    "page": 1
   }
 }
