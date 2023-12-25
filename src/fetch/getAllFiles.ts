@@ -1,14 +1,14 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
 import { fetchDetailsWithInstallationId } from "./fetch";
-import File from "../types/File";
+import FilePath from "../types/FilePath";
 
 export async function getAllFiles(
   app: Probot,
   installationId: number,
   owner: string,
   repoName: string
-): Promise<File[]> {
+): Promise<FilePath[]> {
   try {
     const response: any = await fetchDetailsWithInstallationId(
       app,
@@ -23,7 +23,7 @@ export async function getAllFiles(
     );
 
     const files: any[] = [...response.data.tree];
-    const filePaths: File[] = files.map((file: any) => ({
+    const filePaths: FilePath[] = files.map((file: any) => ({
       path: file.path,
     }));
 

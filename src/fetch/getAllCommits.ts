@@ -38,11 +38,6 @@ export async function getAllCommits(
       `Fetched total ${commitList.length} commits for installation id: ${installationId}`
     );
 
-    if (commitList.length === 0) {
-      app.log.error(`Failed to find commits after ${commitAge}`);
-      return [];
-    }
-
     return commitList;
   } catch (error: any) {
     app.log.error(
