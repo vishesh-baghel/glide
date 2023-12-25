@@ -5,7 +5,8 @@
     "all_issues": "GET /repos/{owner}/{repo}/issues",
     "get_issue": "GET /repos/{owner}/{repo}/issues/{issue_number}",
     "all_commits": "GET /repos/{owner}/{repo}/commits",
-    "all_affected_files_in_pr": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files"
+    "all_affected_files_in_pr": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+    "all_files": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}"
   },
   "all_issues": {
     "endpoint": "GET /repos/{owner}/{repo}/issues",
@@ -13,5 +14,13 @@
     "state_closed": "closed",
     "per_page": 50,
     "page": 1
+  },
+  "all_files": {
+    "endpoint": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "default_branch": "main"
+  },
+  "all_commits": {
+    "endpoint": "GET /repos/{owner}/{repo}/commits",
+    "default_branch": "main"
   }
 }
