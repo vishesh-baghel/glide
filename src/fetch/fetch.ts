@@ -2,7 +2,6 @@ import { Octokit } from "octokit";
 import { RequestParameters } from "@octokit/types";
 import { Probot } from "probot";
 import { createAppAuth } from "@octokit/auth-app";
-import { error } from "console";
 
 const token = process.env.GITHUB_ACCESS_TOKEN;
 const appId = process.env.APP_ID;
@@ -37,7 +36,7 @@ function fetchDetailsWithInstallationId(
       app.log.error(
         `Error while fetching resource details for resource url: ${endpoint}`
       );
-      reject(error);
+      reject(err);
     }
   });
 }
@@ -63,62 +62,3 @@ function fetchDetails(
 }
 
 export { fetchDetails, fetchDetailsWithInstallationId };
-
-// const octokit = new Octokit({
-//   auth: "YOUR-TOKEN",
-// });
-
-// await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
-//   owner: "OWNER",
-//   repo: "REPO",
-//   pull_number: "PULL_NUMBER",
-//   headers: {
-//     "X-GitHub-Api-Version": "2022-11-28",
-//   },
-// });
-
-// // Octokit.js
-// // https://github.com/octokit/core.js#readme
-// const octokit = new Octokit({
-//   auth: "YOUR-TOKEN",
-// });
-
-// await octokit.request("GET /repos/{owner}/{repo}/commits", {
-//   owner: "OWNER",
-//   repo: "REPO",
-//   headers: {
-//     "X-GitHub-Api-Version": "2022-11-28",
-//   },
-// });
-
-// // Octokit.js
-// // https://github.com/octokit/core.js#readme
-// const octokit = new Octokit({
-//   auth: "YOUR-TOKEN",
-// });
-
-// await octokit.request(
-//   "GET /repos/{owner}/{repo}/issues/{issue_number}/labels",
-//   {
-//     owner: "OWNER",
-//     repo: "REPO",
-//     issue_number: "ISSUE_NUMBER",
-//     headers: {
-//       "X-GitHub-Api-Version": "2022-11-28",
-//     },
-//   }
-// );
-
-// Octokit.js
-// https://github.com/octokit/core.js#readme
-// const octokit = new Octokit({
-//   auth: "YOUR-TOKEN",
-// });
-
-// await octokit.request("GET /repos/{owner}/{repo}/issues", {
-//   owner: "OWNER",
-//   repo: "REPO",
-//   headers: {
-//     "X-GitHub-Api-Version": "2022-11-28",
-//   },
-// });
