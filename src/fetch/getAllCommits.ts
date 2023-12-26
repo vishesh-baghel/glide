@@ -1,7 +1,7 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "./fetch";
-import Commit from "../types/Commit";
+import { fetchDetailsWithInstallationId } from "./fetchBase";
+import { Commit } from "../types/Commit";
 import { getTimeStampOlderThanMonths } from "../utils";
 
 export async function getAllCommits(

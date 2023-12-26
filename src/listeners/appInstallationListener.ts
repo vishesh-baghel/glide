@@ -1,11 +1,13 @@
 import { Probot } from "probot";
+import configs from "../configs/github.webhook.event.configs.json";
 
-function listeningForAppInstallationEvents(app: Probot) {
+export function listeningForAppInstallationEvents(app: Probot) {
   return new Promise((resolve, reject) => {
     try {
       app.log.info("Listening for app installation events");
 
-      app.on("installation.created", async (context) => {
+      const events: any[] = [configs.app_installation.created];
+      app.on(events, async (context) => {
         app.log.info("Received an app installation event");
 
         resolve(context.payload);
@@ -18,5 +20,3 @@ function listeningForAppInstallationEvents(app: Probot) {
     }
   });
 }
-
-export default listeningForAppInstallationEvents;

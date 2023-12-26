@@ -1,5 +1,3 @@
-type RiskScore = {
+export type RiskScore = {
   score: number;
 };
-
-export default RiskScore;

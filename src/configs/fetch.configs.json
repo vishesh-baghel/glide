@@ -16,7 +16,8 @@
     "page": 1
   },
   "all_files": {
-    "endpoint": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "endpoint_git_tree": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "endpoint_pull_request": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
     "default_branch": "main"
   },
   "all_commits": {

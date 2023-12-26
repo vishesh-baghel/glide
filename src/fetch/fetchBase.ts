@@ -28,7 +28,6 @@ function fetchDetailsWithInstallationId(
 
   return new Promise(async (resolve, reject) => {
     try {
-      app.log.info("fetching details for resource endpoint: " + endpoint);
       const data = await octokit.request(endpoint, parameters);
 
       resolve(data);

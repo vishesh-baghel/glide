@@ -1,4 +1,4 @@
-import Commit from "../types/Commit";
+import { Commit } from "../types/Commit";
 import { getTimeDifference } from "../utils";
 
 export function calculateRiskScore(commits: Commit[]): number {

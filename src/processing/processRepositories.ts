@@ -1,11 +1,11 @@
 import { Probot } from "probot";
-import FileType from "../types/File";
-import Commit from "../types/Commit";
+import { FileType } from "../types/File";
+import { Commit } from "../types/Commit";
 import { getAllCommits } from "../fetch/getAllCommits";
 import { getAllFiles } from "../fetch/getAllFiles";
 import { calculateRiskScore } from "./calculateRiskScore";
-import FilePath from "../types/FilePath";
-import File from "../db/models/File";
+import { FilePath } from "../types/FilePath";
+import { File } from "../db/models/File";
 
 export async function processRepositories(app: Probot, response: any) {
   const { repositories, installation } = response;

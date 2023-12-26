@@ -1,5 +1,3 @@
-type FilePath = {
+export type FilePath = {
   path: string;
 };
-
-export default FilePath;
