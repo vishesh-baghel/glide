@@ -3,7 +3,7 @@ import { FileType } from "../types/File";
 import { Commit } from "../types/Commit";
 import { getAllCommits } from "../fetch/getAllCommits";
 import { getAllFiles } from "../fetch/getAllFiles";
-import { calculateRiskScore } from "./calculateRiskScore";
+import { calculateRiskScore } from "./riskScoreService";
 import { FilePath } from "../types/FilePath";
 import { File } from "../db/models/File";
 

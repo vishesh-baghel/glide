@@ -69,7 +69,7 @@ export async function getAllFilesFromPullRequest(
     }));
 
     app.log.info(
-      `Total ${files.length} files fetched from pull request with number: ${pullNumber} of the repository: ${owner}/${repoName}`
+      `Total ${files.length} files fetched from pull request(number: ${pullNumber}) of the repository: ${owner}/${repoName}`
     );
 
     return files;

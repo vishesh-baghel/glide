@@ -21,6 +21,8 @@
     "@netlify/functions": "^2.4.1",
     "@octokit/app": "^14.0.2",
     "@probot/adapter-aws-lambda-serverless": "^3.0.4",
+    "json2md": "^2.0.0",
+    "markdown-table": "^3.0.3",
     "mongoose": "^8.0.3",
     "node": "^20.10.0",
     "octokit": "^3.1.2",
