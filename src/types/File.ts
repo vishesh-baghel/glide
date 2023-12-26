@@ -6,4 +6,5 @@ export type FileType = {
   repoName: string;
   filePath: string;
   commits: Commit[];
+  riskScore: number;
 };

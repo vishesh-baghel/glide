@@ -52,5 +52,7 @@ export async function processPullRequests(app: Probot, payload: any) {
     })
   );
 
+  app.log.info(`Fetched total ${fileScoreMap.length} files from the DB`);
+
   return fileScoreMap;
 }

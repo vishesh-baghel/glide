@@ -1,15 +1,23 @@
 import { Probot } from "probot";
 import { connectDb } from "./db/dbConnection";
 import { listeningForAppInstallationEvents } from "./listeners/appInstallationListener";
-import { fetchDetailsWithInstallationId } from "./fetch/fetchBase";
+import {
+  fetchDetails,
+  fetchDetailsWithInstallationId,
+} from "./fetch/fetchBase";
 import { processRepositories } from "./services/repositoryService";
 import { listeningForPullRequestEvents } from "./listeners/pullRequestListener";
 import configs from "./configs/fetch.configs.json";
 import eventConfigs from "./configs/github.webhook.event.configs.json";
-import { createCommentOnGithub } from "./services/commentService";
+import {
+  constructComment,
+  createCommentOnGithub,
+} from "./services/commentService";
 import { processPullRequests } from "./services/pullRequestService";
 import { FileScoreMap } from "./types/FileScoreMap";
-import { markdownTable } from "markdown-table";
+import { Align, getMarkdownTable } from "markdown-table-ts";
+
+const checkRateLimit: boolean = false;
 
 export async function main(app: Probot) {
   connectDb(app).catch((error: any) => {
@@ -20,16 +28,19 @@ export async function main(app: Probot) {
 
   processPullRequestEvents(app);
 
-  fetchDetailsWithInstallationId(
-    app,
-    45426396,
-    configs.all_files.endpoint_pull_request,
-    {
-      owner: "vishesh-baghel",
-      repo: "code-review-bot",
-      pull_number: 2,
-    }
-  )
+  if (checkRateLimit === true) {
+    fetchDetails(app, configs.endpoints.rate_limit, {}).then(
+      (response: any) => {
+        app.log.info(response);
+      }
+    );
+  }
+
+  fetchDetails(app, configs.all_files.endpoint_pull_request, {
+    owner: "vishesh-baghel",
+    repo: "code-review-bot",
+    pull_number: 2,
+  })
     .then((response: any) => {
       type ResponseFile = {
         sha: string;
@@ -44,12 +55,21 @@ export async function main(app: Probot) {
         status: file.status,
       }));
 
-      // const comment = files.map((file: ResponseFile) => {
-      //   return markdownTable([
-      //     ["File Name", "Status"],
-      //     [`${file.filePath}`, `${file.status}`],
-      //   ]);
-      // });
+      const table = getMarkdownTable({
+        table: {
+          head: ["File Name", "File status"],
+          body: [["1"], ["2", "Bob", "25"], ["3", "Alice", "23"]],
+        },
+        alignment: [Align.Left, Align.Left, Align.Left],
+      });
+      const comment = files.map((file: ResponseFile) => {
+        return getMarkdownTable({
+          table: {
+            head: ["File Name", "File status"],
+            body: [[`${file.filePath}`, `${file.status}`]],
+          },
+        });
+      });
       // app.log.info(comment);
     })
     .catch((error: any) => {
@@ -77,8 +97,8 @@ function processPullRequestEvents(app: Probot) {
         app,
         context.payload
       );
-      const comment = `File name ${files[0].fileName} with score: ${files[0].score}`;
-      createCommentOnGithub(comment, context);
+      const comment = await constructComment(app, files);
+      createCommentOnGithub(app, comment, context);
     })
     .catch((error: any) => {
       app.log.error("Error while processing pull request events");

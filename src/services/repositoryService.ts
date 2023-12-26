@@ -69,6 +69,7 @@ export async function processRepositories(app: Probot, response: any) {
               repoName: file.repoName,
               filePath: file.filePath,
               commits: file.commits,
+              riskScore: file.riskScore,
             });
           })
         );
