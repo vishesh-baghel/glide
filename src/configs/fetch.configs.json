@@ -19,13 +19,15 @@
   "all_files": {
     "endpoint_git_tree": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
     "endpoint_pull_request": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
-    "default_branch": "main"
+    "default_branch": "main",
+    "file_array_limit": 5000
   },
   "all_commits": {
     "endpoint": "GET /repos/{owner}/{repo}/commits",
     "default_branch": "main",
     "commit_age": 3,
-    "page_size": 50
+    "page_size": 50,
+    "commit_array_limit": 5000
   },
   "batch_size": {
     "repository_processing_batch_size": 10

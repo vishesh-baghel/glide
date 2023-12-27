@@ -15,8 +15,9 @@ import {
 } from "./services/commentService";
 import { processPullRequests } from "./services/pullRequestService";
 import { FileScoreMap } from "./types/FileScoreMap";
+import { isValidFilePath } from "./fetch/getAllFiles";
 
-const checkRateLimit: boolean = false;
+const debugFlag: boolean = false;
 
 export async function main(app: Probot) {
   connectDb(app).catch((error: any) => {
@@ -27,42 +28,44 @@ export async function main(app: Probot) {
 
   processPullRequestEvents(app);
 
-  if (checkRateLimit === true) {
+  if (debugFlag === true) {
     fetchDetails(app, configs.endpoints.rate_limit, {}).then(
       (response: any) => {
         app.log.info(response);
       }
     );
+
+    fetchDetailsWithInstallationId(
+      app,
+      45486421,
+      configs.all_files.endpoint_pull_request,
+      {
+        owner: "vishesh-baghel",
+        repo: "code-review-bot",
+        pull_number: 2,
+      }
+    )
+      .then((response: any) => {
+        type ResponseFile = {
+          sha: string;
+          filePath: string;
+          status: string;
+        };
+        const data: any[] = response.data;
+
+        const files: ResponseFile[] = data.map((file: any) => ({
+          sha: file.sha,
+          filePath: file.filename,
+          status: file.status,
+        }));
+        app.log.info(files);
+      })
+      .catch((error: any) => {
+        app.log.error(error);
+      });
   }
 
-  fetchDetailsWithInstallationId(
-    app,
-    45486421,
-    configs.all_files.endpoint_pull_request,
-    {
-      owner: "vishesh-baghel",
-      repo: "code-review-bot",
-      pull_number: 2,
-    }
-  )
-    .then((response: any) => {
-      type ResponseFile = {
-        sha: string;
-        filePath: string;
-        status: string;
-      };
-      const data: any[] = response.data;
-
-      const files: ResponseFile[] = data.map((file: any) => ({
-        sha: file.sha,
-        filePath: file.filename,
-        status: file.status,
-      }));
-      app.log.info(files);
-    })
-    .catch((error: any) => {
-      app.log.error(error);
-    });
+  app.log.info(`false: ${isValidFilePath("src/setupTests.ts")}`);
 }
 
 function processAppInstallationEvents(app: Probot) {

@@ -5,7 +5,8 @@ import { Commit } from "../types/Commit";
 import { getTimeStampOlderThanMonths } from "../utils";
 
 const bugRegex = new RegExp(
-  ".*\\b([Bb]ug(s|gy|ged)?|[Fixf]ix(es|ed|ing)?|[Closec]lose(s|d|ing)?|[ResolveRr]esolve(s|d|ing)?|[AddressAa]ddress(es|ed|ing)?).*"
+  ".*\\b([Bb]ug(s|gy|ged)?|[Fixf]ix(es|ed|ing)?|[Closec]lose(s|d|ing)?|[ResolveRr]esolve(s|d|ing)?|[AddressAa]ddress(es|ed|ing)?).*",
+  "i"
 );
 
 export async function getAllCommits(
@@ -39,14 +40,15 @@ export async function getAllCommits(
         }
       );
 
-      const commits: object[] = [...response.data];
-      const commitList: Commit[] = commits
-        .map((commitObj: any) => ({
-          sha: commitObj.sha,
-          message: commitObj.commit.message,
-          date: commitObj.commit.committer.date,
-        }))
-        .filter((commit: Commit) => commit.message.match(bugRegex));
+      const commitsFromGithub = response.data.filter((commitObj: any) =>
+        commitObj.commit.message.match(bugRegex)
+      );
+
+      const commitList: Commit[] = commitsFromGithub.map((commitObj: any) => ({
+        sha: commitObj.sha,
+        message: commitObj.commit.message,
+        date: commitObj.commit.committer.date,
+      }));
 
       allCommits = allCommits.concat(commitList);
 
@@ -57,14 +59,18 @@ export async function getAllCommits(
       page++;
     }
 
-    app.log.info(
-      `Total ${allCommits.length} commits are eligible for calculating risk score from ${owner}/${repoName} with installation id: ${installationId}`
-    );
+    const commitArrayLimit = configs.all_commits.commit_array_limit;
+    if (allCommits.length > commitArrayLimit) {
+      app.log.warn(
+        `More than ${commitArrayLimit} commits are fetched, cannot proceed further for ${owner}/${repoName} with installation id: ${installationId}`
+      );
+      return [];
+    }
 
     return allCommits;
   } catch (error: any) {
     app.log.error(
-      `Error while fetching all commits for ${owner}/${repoName} and installation id: ${installationId}`
+      `Error while fetching all commits for filePath ${filePath} of repository:${owner}/${repoName} and installation id: ${installationId}`
     );
     app.log.error(error);
     throw error;
