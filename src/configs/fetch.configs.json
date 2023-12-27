@@ -23,6 +23,11 @@
   },
   "all_commits": {
     "endpoint": "GET /repos/{owner}/{repo}/commits",
-    "default_branch": "main"
+    "default_branch": "main",
+    "commit_age": 3,
+    "page_size": 50
+  },
+  "batch_size": {
+    "repository_processing_batch_size": 10
   }
 }

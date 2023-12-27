@@ -24,9 +24,11 @@ export async function getAllFiles(
     );
 
     const files: any[] = [...response.data.tree];
-    const filePaths: FilePath[] = files.map((file: any) => ({
-      path: file.path,
-    }));
+    const filePaths: FilePath[] = files
+      .map((file: any) => ({
+        path: file.path,
+      }))
+      .filter((file: FilePath) => isValidFilePath(file.path));
 
     app.log.info(
       `Total ${filePaths.length} files fetched from repository: ${owner}/${repoName} for installation id: ${installationId}`
@@ -80,4 +82,50 @@ export async function getAllFilesFromPullRequest(
     app.log.error(error);
     return [];
   }
+}
+
+function isValidFilePath(filePath: string): boolean {
+  const excludedPaths = [
+    // Test Files
+    /\/test\//i,
+    /\/tests\//i,
+    /\/__tests__\//i,
+    /_test\.js$/i,
+    /_spec\.js$/i,
+
+    // Configuration Files
+    /^package\.json$/i,
+    /\.travis\.yml$/i,
+    /\.gitignore$/i,
+
+    // Generated Files
+    /\/node_modules\//i,
+
+    // Documentation Files
+    /\.md$/i,
+    /\.txt$/i,
+
+    // Data Files
+    /\.json$/i,
+
+    // Dependency Files
+    /^yarn\.lock$/i,
+    /^package-lock\.json$/i,
+
+    // Build Files
+    /webpack\.config\.js$/i,
+    /Gruntfile\.js$/i,
+
+    // Configuration Files
+    /\/config\//i,
+
+    // IDE/Editor Files
+    /\/\.vscode\//i,
+    /\/\.idea\//i,
+
+    // Migration Files
+    /\/migrations\//i,
+  ];
+
+  return !excludedPaths.some((pattern) => pattern.test(filePath));
 }

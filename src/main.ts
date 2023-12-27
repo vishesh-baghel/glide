@@ -15,7 +15,6 @@ import {
 } from "./services/commentService";
 import { processPullRequests } from "./services/pullRequestService";
 import { FileScoreMap } from "./types/FileScoreMap";
-import { Align, getMarkdownTable } from "markdown-table-ts";
 
 const checkRateLimit: boolean = false;
 
@@ -36,11 +35,16 @@ export async function main(app: Probot) {
     );
   }
 
-  fetchDetails(app, configs.all_files.endpoint_pull_request, {
-    owner: "vishesh-baghel",
-    repo: "code-review-bot",
-    pull_number: 2,
-  })
+  fetchDetailsWithInstallationId(
+    app,
+    45486421,
+    configs.all_files.endpoint_pull_request,
+    {
+      owner: "vishesh-baghel",
+      repo: "code-review-bot",
+      pull_number: 2,
+    }
+  )
     .then((response: any) => {
       type ResponseFile = {
         sha: string;
@@ -54,23 +58,7 @@ export async function main(app: Probot) {
         filePath: file.filename,
         status: file.status,
       }));
-
-      const table = getMarkdownTable({
-        table: {
-          head: ["File Name", "File status"],
-          body: [["1"], ["2", "Bob", "25"], ["3", "Alice", "23"]],
-        },
-        alignment: [Align.Left, Align.Left, Align.Left],
-      });
-      const comment = files.map((file: ResponseFile) => {
-        return getMarkdownTable({
-          table: {
-            head: ["File Name", "File status"],
-            body: [[`${file.filePath}`, `${file.status}`]],
-          },
-        });
-      });
-      // app.log.info(comment);
+      app.log.info(files);
     })
     .catch((error: any) => {
       app.log.error(error);
