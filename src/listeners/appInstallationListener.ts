@@ -1,11 +1,11 @@
 import { Probot } from "probot";
 
-function listeningForAppInstallationEvents(app: Probot) {
+export function listeningForAppInstallationEvents(app: Probot, events: any[]) {
   return new Promise((resolve, reject) => {
     try {
       app.log.info("Listening for app installation events");
 
-      app.on("installation.created", async (context) => {
+      app.on(events, async (context) => {
         app.log.info("Received an app installation event");
 
         resolve(context.payload);
@@ -18,5 +18,3 @@ function listeningForAppInstallationEvents(app: Probot) {
     }
   });
 }
-
-export default listeningForAppInstallationEvents;

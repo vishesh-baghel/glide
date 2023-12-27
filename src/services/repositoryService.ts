@@ -1,24 +1,39 @@
 import { Probot } from "probot";
-import FileType from "../types/File";
-import Commit from "../types/Commit";
+import { Commit } from "../types/Commit";
 import { getAllCommits } from "../fetch/getAllCommits";
 import { getAllFiles } from "../fetch/getAllFiles";
-import { calculateRiskScore } from "./calculateRiskScore";
-import FilePath from "../types/FilePath";
-import File from "../db/models/File";
+import { calculateRiskScore } from "./riskScoreService";
+import { FilePath } from "../types/FilePath";
+import { File } from "../db/models/File";
+import configs from "../configs/fetch.configs.json";
 
-export async function processRepositories(app: Probot, response: any) {
+export async function processRepositories(
+  app: Probot,
+  response: any
+): Promise<void> {
+  const batchSize = configs.batch_size.repository_processing_batch_size;
+
   const { repositories, installation } = response;
   const repos: any[] = repositories;
   const installationId: number = installation.id;
-
-  // Confirmed from https://github.com/orgs/community/discussions/24509
   const owner = installation.account.login;
 
   app.log.info(`Started the processing of repositories for ${installationId}`);
 
+  for (let i = 0; i < repos.length; i += batchSize) {
+    const batch = repos.slice(i, i + batchSize);
+    await processRepositoryBatch(app, installationId, owner, batch);
+  }
+}
+
+async function processRepositoryBatch(
+  app: Probot,
+  installationId: number,
+  owner: string,
+  repositories: any[]
+): Promise<void> {
   await Promise.all(
-    repos.map(async (repo) => {
+    repositories.map(async (repo) => {
       try {
         app.log.info(`Started processing repository: ${repo.name}`);
 
@@ -41,37 +56,21 @@ export async function processRepositories(app: Probot, response: any) {
             repo.name,
             file.path
           );
-          return commits;
+          return { file, commits };
         });
 
         const allCommits = await Promise.all(commitsPromises);
 
-        const riskScorePromises = fileNames.map((file, index) => {
-          const score: number = calculateRiskScore(allCommits[index]);
+        const files = allCommits.map(({ file, commits }) => ({
+          installationId: installationId,
+          owner: owner,
+          repoName: repo.name,
+          filePath: file.path,
+          commits: commits,
+          riskScore: calculateRiskScore(commits),
+        }));
 
-          return {
-            installationId: installationId,
-            owner: owner,
-            repoName: repo.name,
-            filePath: file.path,
-            commits: allCommits[index],
-            riskScore: score,
-          };
-        });
-
-        const files = await Promise.all(riskScorePromises);
-
-        await Promise.all(
-          files.map(async (file: FileType) => {
-            await File.create({
-              installationId: file.installationId,
-              owner: file.owner,
-              repoName: file.repoName,
-              filePath: file.filePath,
-              commits: file.commits,
-            });
-          })
-        );
+        await Promise.all([File.insertMany(files)]);
       } catch (error: any) {
         app.log.error(error);
       }

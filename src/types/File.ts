@@ -1,11 +1,10 @@
-import Commit from "./Commit";
+import { Commit } from "./Commit";
 
-type FileType = {
+export type FileType = {
   installationId: number;
   owner: string;
   repoName: string;
   filePath: string;
   commits: Commit[];
+  riskScore: number;
 };
-
-export default FileType;

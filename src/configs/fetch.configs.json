@@ -6,7 +6,8 @@
     "get_issue": "GET /repos/{owner}/{repo}/issues/{issue_number}",
     "all_commits": "GET /repos/{owner}/{repo}/commits",
     "all_affected_files_in_pr": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
-    "all_files": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}"
+    "all_files": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "rate_limit": "GET /rate_limit"
   },
   "all_issues": {
     "endpoint": "GET /repos/{owner}/{repo}/issues",
@@ -16,11 +17,17 @@
     "page": 1
   },
   "all_files": {
-    "endpoint": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "endpoint_git_tree": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+    "endpoint_pull_request": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
     "default_branch": "main"
   },
   "all_commits": {
     "endpoint": "GET /repos/{owner}/{repo}/commits",
-    "default_branch": "main"
+    "default_branch": "main",
+    "commit_age": 3,
+    "page_size": 50
+  },
+  "batch_size": {
+    "repository_processing_batch_size": 10
   }
 }
