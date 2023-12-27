@@ -30,9 +30,6 @@ function fetchDetailsWithInstallationId(
     try {
       const data = await octokit.request(endpoint, parameters);
 
-      app.log.info(
-        `fetched details for resource endpoint: ${endpoint} successfully`
-      );
       resolve(data);
     } catch (err: any) {
       app.log.error(
@@ -51,9 +48,6 @@ function fetchDetails(
   return new Promise(async (resolve, reject) => {
     try {
       const data = await octokitApp.request(endpoint, parameters);
-      app.log.info(
-        `fetched details for resource endpoint: ${endpoint} successfully`
-      );
 
       resolve(data);
     } catch (err: any) {

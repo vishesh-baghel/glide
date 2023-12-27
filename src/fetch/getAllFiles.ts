@@ -23,16 +23,26 @@ export async function getAllFiles(
       }
     );
 
-    const files: any[] = [...response.data.tree];
-    const filePaths: FilePath[] = files
-      .map((file: any) => ({
-        path: file.path,
-      }))
-      .filter((file: FilePath) => isValidFilePath(file.path));
+    const githubResponse: any[] = response.data.tree;
+    const files: any[] = githubResponse.filter(
+      (file: any) => isValidFilePath(file.path) && file.type === "blob"
+    );
+
+    const filePaths: FilePath[] = files.map((file: any) => ({
+      path: file.path,
+    }));
 
     app.log.info(
-      `Total ${filePaths.length} files fetched from repository: ${owner}/${repoName} for installation id: ${installationId}`
+      `Total ${filePaths.length} files are eligible for processing from repository: ${owner}/${repoName} for installation id: ${installationId}`
     );
+
+    const filesLimit = configs.all_files.file_array_limit;
+    if (filePaths.length > filesLimit) {
+      app.log.warn(
+        `More than ${filesLimit} files are fetched, cannot proceed further for ${owner}/${repoName} with installation id: ${installationId}`
+      );
+      return [];
+    }
 
     return filePaths;
   } catch (error: any) {
@@ -84,48 +94,36 @@ export async function getAllFilesFromPullRequest(
   }
 }
 
-function isValidFilePath(filePath: string): boolean {
+export function isValidFilePath(filePath: string): boolean {
   const excludedPaths = [
-    // Test Files
-    /\/test\//i,
-    /\/tests\//i,
-    /\/__tests__\//i,
-    /_test\.js$/i,
-    /_spec\.js$/i,
+    "node_modules",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".ico",
+    ".svg",
+    ".json",
+    ".md",
+    ".txt",
+    "test",
+    "tests",
+    ".test",
+    "package",
+    ".yml",
+    "config",
+    ".log",
+    ".lock",
+    ".bak",
+    ".map",
 
-    // Configuration Files
-    /^package\.json$/i,
-    /\.travis\.yml$/i,
-    /\.gitignore$/i,
-
-    // Generated Files
-    /\/node_modules\//i,
-
-    // Documentation Files
-    /\.md$/i,
-    /\.txt$/i,
-
-    // Data Files
-    /\.json$/i,
-
-    // Dependency Files
-    /^yarn\.lock$/i,
-    /^package-lock\.json$/i,
-
-    // Build Files
-    /webpack\.config\.js$/i,
-    /Gruntfile\.js$/i,
-
-    // Configuration Files
-    /\/config\//i,
-
-    // IDE/Editor Files
-    /\/\.vscode\//i,
-    /\/\.idea\//i,
-
-    // Migration Files
-    /\/migrations\//i,
+    // this returns true for "scr/setupTests.ts"
   ];
 
-  return !excludedPaths.some((pattern) => pattern.test(filePath));
+  return !excludedPaths.some(
+    (path: string) =>
+      filePath.includes(path) ||
+      filePath.endsWith(`.${path}`) ||
+      filePath.startsWith(".") ||
+      filePath === path
+  );
 }

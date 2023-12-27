@@ -48,7 +48,14 @@ async function processRepositoryBatch(
           `Received Total ${fileNames.length} files for processing from repository: ${owner}/${repo.name} with installation id: ${installationId}`
         );
 
-        const commitsPromises = fileNames.map(async (file) => {
+        if (fileNames.length === 0) {
+          app.log.warn(
+            `Cannot proceed further, because files are not available for ${owner}/${repo.name} with installation id: ${installationId}`
+          );
+          return;
+        }
+
+        const fileCommitMapPromises = fileNames.map(async (file) => {
           const commits: Commit[] = await getAllCommits(
             app,
             installationId,
@@ -59,9 +66,16 @@ async function processRepositoryBatch(
           return { file, commits };
         });
 
-        const allCommits = await Promise.all(commitsPromises);
+        const fileCommitMaps = await Promise.all(fileCommitMapPromises);
 
-        const files = allCommits.map(({ file, commits }) => ({
+        if (fileCommitMaps.length === 0) {
+          app.log.warn(
+            `Cannot proceed to save files, because either file-commit-map is empty or it exceeded the allowed size limit for ${owner}/${repo.name} with installation id: ${installationId}`
+          );
+          return;
+        }
+
+        const files = fileCommitMaps.map(({ file, commits }) => ({
           installationId: installationId,
           owner: owner,
           repoName: repo.name,
@@ -71,6 +85,10 @@ async function processRepositoryBatch(
         }));
 
         await Promise.all([File.insertMany(files)]);
+
+        app.log.info(
+          `Completed the processing of ${owner}/${repo.name} repository successfully for installation id: ${installationId}`
+        );
       } catch (error: any) {
         app.log.error(error);
       }
