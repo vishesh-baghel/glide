@@ -1,11 +1,12 @@
 import { Probot } from "probot";
 import { Commit } from "../types/Commit";
-import { getAllCommits } from "../fetch/getAllCommits";
-import { getAllFiles } from "../fetch/getAllFiles";
+import { getAllCommits } from "../fetch/fetchCommits";
+import { getAllFiles } from "../fetch/fetchFiles";
 import { calculateRiskScore } from "./riskScoreService";
 import { FilePath } from "../types/FilePath";
 import { File } from "../db/models/File";
 import configs from "../configs/fetch.configs.json";
+import { fetchDetailsWithInstallationId } from "../fetch/fetchBase";
 
 export async function processRepositories(
   app: Probot,
@@ -37,11 +38,19 @@ async function processRepositoryBatch(
       try {
         app.log.info(`Started processing repository: ${repo.name}`);
 
-        const fileNames: FilePath[] = await getAllFiles(
+        const defaultBranch = await getDefaultBranch(
           app,
           installationId,
           owner,
           repo.name
+        );
+
+        const fileNames: FilePath[] = await getAllFiles(
+          app,
+          installationId,
+          owner,
+          repo.name,
+          defaultBranch
         );
 
         app.log.info(
@@ -61,6 +70,7 @@ async function processRepositoryBatch(
             installationId,
             owner,
             repo.name,
+            defaultBranch,
             file.path
           );
           return { file, commits };
@@ -81,7 +91,7 @@ async function processRepositoryBatch(
           repoName: repo.name,
           filePath: file.path,
           commits: commits,
-          riskScore: calculateRiskScore(commits),
+          riskScore: calculateRiskScore(app, commits),
         }));
 
         await Promise.all([File.insertMany(files)]);
@@ -94,4 +104,23 @@ async function processRepositoryBatch(
       }
     })
   );
+}
+
+async function getDefaultBranch(
+  app: Probot,
+  installationId: number,
+  owner: string,
+  repoName: string
+): Promise<string> {
+  const repositoryResponse: any = await fetchDetailsWithInstallationId(
+    app,
+    installationId,
+    configs.repository.endpoint,
+    {
+      owner: owner,
+      repo: repoName,
+    }
+  );
+
+  return repositoryResponse.data.default_branch;
 }

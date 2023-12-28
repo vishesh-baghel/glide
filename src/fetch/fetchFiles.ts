@@ -1,6 +1,6 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "../fetch/fetchBase";
+import { fetchDetailsWithInstallationId } from "./fetchBase";
 import { FilePath } from "../types/FilePath";
 import { GithubResponseFile } from "../types/GithubResponseFile";
 
@@ -8,7 +8,8 @@ export async function getAllFiles(
   app: Probot,
   installationId: number,
   owner: string,
-  repoName: string
+  repoName: string,
+  defaultBranch: string
 ): Promise<FilePath[]> {
   try {
     const response: any = await fetchDetailsWithInstallationId(
@@ -18,7 +19,7 @@ export async function getAllFiles(
       {
         owner: owner,
         repo: repoName,
-        tree_sha: configs.all_files.default_branch,
+        tree_sha: defaultBranch,
         recursive: true,
       }
     );
@@ -97,6 +98,7 @@ export async function getAllFilesFromPullRequest(
 export function isValidFilePath(filePath: string): boolean {
   const excludedPaths = [
     "node_modules",
+    "license",
     ".png",
     ".jpg",
     ".jpeg",

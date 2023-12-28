@@ -25,9 +25,15 @@
   "all_commits": {
     "endpoint": "GET /repos/{owner}/{repo}/commits",
     "default_branch": "main",
-    "commit_age": 3,
+    "commit_age_in_months": 6,
     "page_size": 50,
     "commit_array_limit": 5000
+  },
+  "all_branches": {
+    "endpoint": "GET /repos/{owner}/{repo}/branches"
+  },
+  "repository": {
+    "endpoint": "GET /repos/{owner}/{repo}"
   },
   "batch_size": {
     "repository_processing_batch_size": 10

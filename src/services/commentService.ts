@@ -19,14 +19,8 @@ export async function constructComment(
   files: FileScoreMap[]
 ): Promise<string> {
   const rows: string[][] = files.map((file: FileScoreMap) => {
-    const score =
-      file.score !== undefined && file.score !== null
-        ? file.score.toString()
-        : "0";
-    return [file.fileName, score];
+    return [`${file.fileName}`, `${file.score.toFixed(2)}`];
   });
-
-  app.log.info(rows);
 
   if (rows.length === 0 || rows === undefined || rows === null) {
     app.log.error("File rows are invalid. cannot construct comment");

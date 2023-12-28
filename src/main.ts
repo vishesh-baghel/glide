@@ -13,9 +13,12 @@ import {
   constructComment,
   createCommentOnGithub,
 } from "./services/commentService";
-import { processPullRequests } from "./services/pullRequestService";
+import {
+  processPullRequestOpenEvent,
+  updateFilesInDb,
+} from "./services/pullRequestService";
 import { FileScoreMap } from "./types/FileScoreMap";
-import { isValidFilePath } from "./fetch/getAllFiles";
+import { isValidFilePath } from "./fetch/fetchFiles";
 
 const debugFlag: boolean = false;
 
@@ -24,16 +27,19 @@ export async function main(app: Probot) {
     app.log.error(error);
   });
 
-  processAppInstallationEvents(app);
+  handleAppInstallationCreatedEvents(app);
 
-  processPullRequestEvents(app);
+  handlePullRequestOpenEvents(app);
+
+  handlePullRequestClosedEvents(app);
 
   if (debugFlag === true) {
-    fetchDetails(app, configs.endpoints.rate_limit, {}).then(
-      (response: any) => {
-        app.log.info(response);
-      }
-    );
+    fetchDetails(app, "GET /repos/{owner}/{repo}", {
+      owner: "vishesh-baghel",
+      repo: "lombok",
+    }).then((response: any) => {
+      app.log.info(response);
+    });
 
     fetchDetailsWithInstallationId(
       app,
@@ -68,7 +74,7 @@ export async function main(app: Probot) {
   app.log.info(`false: ${isValidFilePath("src/setupTests.ts")}`);
 }
 
-function processAppInstallationEvents(app: Probot) {
+function handleAppInstallationCreatedEvents(app: Probot) {
   const events: any[] = [eventConfigs.app_installation.created];
 
   listeningForAppInstallationEvents(app, events)
@@ -79,12 +85,13 @@ function processAppInstallationEvents(app: Probot) {
     });
 }
 
-function processPullRequestEvents(app: Probot) {
+function handlePullRequestOpenEvents(app: Probot) {
   const events: any[] = [eventConfigs.pull_request.opened];
 
   listeningForPullRequestEvents(app, events)
     .then(async (context: any) => {
-      const files: FileScoreMap[] = await processPullRequests(
+      app.log.info("Received an pull request opened event");
+      const files: FileScoreMap[] = await processPullRequestOpenEvent(
         app,
         context.payload
       );
@@ -92,7 +99,30 @@ function processPullRequestEvents(app: Probot) {
       createCommentOnGithub(app, comment, context);
     })
     .catch((error: any) => {
-      app.log.error("Error while processing pull request events");
+      app.log.error("Error while processing pull request opened event");
+      app.log.error(error);
+    });
+}
+
+function handlePullRequestClosedEvents(app: Probot) {
+  const events: any[] = [eventConfigs.pull_request.closed];
+
+  listeningForPullRequestEvents(app, events)
+    .then(async (context: any) => {
+      app.log.info("Received an pull request closed event");
+      const areFilesUpdated: boolean = await updateFilesInDb(
+        app,
+        context.payload
+      );
+
+      if (areFilesUpdated) {
+        const comment =
+          "Risk scores are updated for all the files modified in this pull request.";
+        createCommentOnGithub(app, comment, context);
+      }
+    })
+    .catch((error: any) => {
+      app.log.error("Error while processing pull request closed event");
       app.log.error(error);
     });
 }
