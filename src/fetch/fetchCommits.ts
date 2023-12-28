@@ -14,11 +14,12 @@ export async function getAllCommits(
   installationId: number,
   owner: string,
   repoName: string,
+  defaultBranch: string,
   filePath: string
 ): Promise<Commit[]> {
   try {
     const commitAge = getTimeStampOlderThanMonths(
-      configs.all_commits.commit_age
+      configs.all_commits.commit_age_in_months
     );
     const pageSize = configs.all_commits.page_size;
     let page = 1;
@@ -32,7 +33,7 @@ export async function getAllCommits(
         {
           owner: owner,
           repo: repoName,
-          sha: configs.all_commits.default_branch,
+          sha: defaultBranch,
           path: filePath,
           since: commitAge,
           per_page: pageSize,

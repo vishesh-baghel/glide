@@ -6,8 +6,6 @@ export function listeningForPullRequestEvents(app: Probot, events: any[]) {
       app.log.info("Listening for pull request events");
 
       app.on(events, async (context) => {
-        app.log.info("Received an pull request event");
-
         resolve(context);
       });
     } catch (error) {
