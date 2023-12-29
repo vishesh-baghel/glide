@@ -6,7 +6,7 @@ import { calculateRiskScore } from "./riskScoreService";
 import { FilePath } from "../types/FilePath";
 import { File } from "../db/models/File";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "../fetch/fetchBase";
+import { fetchDetailsWithInstallationId } from "../fetch/fetch";
 
 export async function processRepositories(
   app: Probot,

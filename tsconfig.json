@@ -69,6 +69,6 @@
     "pretty": false,
     "skipLibCheck": true
   },
-  "include": ["src/", "app.js"],
+  "include": ["src/", "app.js", "webhookProxy.ts"],
   "compileOnSave": false
 }

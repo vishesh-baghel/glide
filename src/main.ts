@@ -1,10 +1,7 @@
 import { Probot } from "probot";
 import { connectDb } from "./db/dbConnection";
 import { listeningForAppInstallationEvents } from "./listeners/appInstallationListener";
-import {
-  fetchDetails,
-  fetchDetailsWithInstallationId,
-} from "./fetch/fetchBase";
+import { fetchDetails, fetchDetailsWithInstallationId } from "./fetch/fetch";
 import { processRepositories } from "./services/repositoryService";
 import { listeningForPullRequestEvents } from "./listeners/pullRequestListener";
 import configs from "./configs/fetch.configs.json";

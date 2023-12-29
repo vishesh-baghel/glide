@@ -7,6 +7,7 @@ import { Commit } from "../types/Commit";
 import { getAllCommits } from "../fetch/fetchCommits";
 import { calculateRiskScore } from "./riskScoreService";
 import { FileType } from "../types/File";
+import { FileStatus } from "../constants/GithubContants";
 
 export async function processPullRequestOpenEvent(
   app: Probot,
@@ -57,8 +58,21 @@ export async function updateFilesInDb(
       return false;
     }
 
+    const updateFileStatuses: FileStatus[] = [
+      FileStatus.Modified,
+      FileStatus.Changed,
+    ];
+
+    const addFileStatuses: FileStatus[] = [
+      FileStatus.Added,
+      FileStatus.Copied,
+      FileStatus.Renamed,
+    ];
+
+    const removeFileStatuses: FileStatus[] = [FileStatus.Removed];
+
     responseFiles.forEach(async (responseFile: GithubResponseFile) => {
-      if (responseFile.status === "modified") {
+      if (updateFileStatuses.includes(responseFile.status)) {
         // update the files
         const file: FileType = await createFileTypeObject(
           app,
@@ -82,7 +96,7 @@ export async function updateFilesInDb(
         };
 
         await File.updateOne(filter, update);
-      } else {
+      } else if (addFileStatuses.includes(responseFile.status)) {
         // create new files in the db
         const file: FileType = await createFileTypeObject(
           app,
@@ -94,6 +108,14 @@ export async function updateFilesInDb(
         );
 
         await File.create(file);
+      } else if (removeFileStatuses.includes(responseFile.status)) {
+        const filter = {
+          installationId: installationId,
+          owner: owner,
+          repoName: repoName,
+          filePath: responseFile.filePath,
+        };
+        await File.deleteOne(filter);
       }
     });
 

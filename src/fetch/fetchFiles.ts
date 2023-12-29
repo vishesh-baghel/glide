@@ -1,6 +1,6 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "./fetchBase";
+import { fetchDetailsWithInstallationId } from "./fetch";
 import { FilePath } from "../types/FilePath";
 import { GithubResponseFile } from "../types/GithubResponseFile";
 
