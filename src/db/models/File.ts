@@ -12,4 +12,4 @@ const FileSchema = new Schema({
   updatedAt: { type: Date, default: new Date() },
 });
 
-export const File = model("file", FileSchema);
+export const File = model("repoFile", FileSchema);

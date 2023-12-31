@@ -8,6 +8,7 @@ import { getAllCommits } from "../fetch/fetchCommits";
 import { calculateRiskScore } from "./riskScoreService";
 import { FileType } from "../types/File";
 import { FileStatus } from "../constants/GithubContants";
+import { retrainModel } from "./predictionService";
 
 export async function processPullRequestOpenEvent(
   app: Probot,
@@ -122,6 +123,8 @@ export async function updateFilesInDb(
     app.log.info(
       `Updated the files coming from pull request with ref: ${owner}/${repoName}/pulls/${pullNumber} successfully for installation id: ${installationId}`
     );
+
+    retrainModel(app);
 
     return true;
   } catch (error: any) {
