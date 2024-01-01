@@ -1,5 +1,5 @@
 import { Probot } from "probot";
-import { connectDb } from "./db/mongodbConnection";
+import { connectMongoDB } from "./db/mongodbConnection";
 import { fetchDetails, fetchDetailsWithInstallationId } from "./fetch/fetch";
 import { processRepositories } from "./services/repositoryService";
 import { listeningForGithubWebhookEvents } from "./listeners/githubWebhookListener";
@@ -17,16 +17,20 @@ import { FileScoreMap } from "./types/FileScoreMap";
 import { isValidFilePath } from "./fetch/fetchFiles";
 import { connectMindsDB } from "./db/mindsdbConnection";
 import { retrainModel } from "./services/predictionService";
+import {
+  errorFallbackCommentForPRClosedEvent,
+  errorFallbackCommentForPROpenEvent,
+} from "./constants/Comments";
 
 const debugFlag: boolean = false;
 
 export async function main(app: Probot) {
-  connectDb(app).catch((error: any) => app.log.error(error));
-  // connectMindsDB(app).catch((error: any) => app.log.error(error));
+  connectMongoDB(app).catch((error: any) => app.log.error(error));
+  connectMindsDB(app).catch((error: any) => app.log.error(error));
   handleAppInstallationCreatedEvents(app);
   handlePullRequestOpenEvents(app);
   handlePullRequestClosedEvents(app);
-  // retrainModel(app);
+  retrainModel(app);
   debug(app);
 }
 
@@ -46,17 +50,24 @@ function handlePullRequestOpenEvents(app: Probot) {
 
   listeningForGithubWebhookEvents(app, events)
     .then(async (context: any) => {
-      app.log.info("Received an pull request opened event");
-      const files: FileScoreMap[] = await processPullRequestOpenEvent(
-        app,
-        context.payload
-      );
-      const comment = await constructComment(app, files);
-      createCommentOnGithub(app, comment, context);
+      try {
+        app.log.info("Received an pull request opened event");
+        const files: FileScoreMap[] = await processPullRequestOpenEvent(
+          app,
+          context.payload
+        );
+        const comment = await constructComment(app, files);
+        createCommentOnGithub(app, comment, context);
+        return context;
+      } catch (error: any) {
+        app.log.error("Error while processing pull request opened event");
+        app.log.error(error);
+        throw { context };
+      }
     })
-    .catch((error: any) => {
-      app.log.error("Error while processing pull request opened event");
-      app.log.error(error);
+    .catch(({ context }: { context: any }) => {
+      const comment: string = errorFallbackCommentForPROpenEvent();
+      createCommentOnGithub(app, comment, context);
     });
 }
 
@@ -65,21 +76,27 @@ function handlePullRequestClosedEvents(app: Probot) {
 
   listeningForGithubWebhookEvents(app, events)
     .then(async (context: any) => {
-      app.log.info("Received an pull request closed event");
-      const areFilesUpdated: boolean = await updateFilesInDb(
-        app,
-        context.payload
-      );
-
-      if (areFilesUpdated) {
-        const comment =
-          "Risk scores are updated for all the files modified in this pull request.";
-        createCommentOnGithub(app, comment, context);
+      try {
+        app.log.info("Received an pull request closed event");
+        const areFilesUpdated: boolean = await updateFilesInDb(
+          app,
+          context.payload
+        );
+        if (areFilesUpdated) {
+          const comment =
+            "Risk scores are updated for all the files modified in this pull request.";
+          createCommentOnGithub(app, comment, context);
+        }
+        return context;
+      } catch (error: any) {
+        app.log.error("Error while processing pull request closed event");
+        app.log.error(error);
+        throw { context };
       }
     })
-    .catch((error: any) => {
-      app.log.error("Error while processing pull request closed event");
-      app.log.error(error);
+    .catch(({ context }: { context: any }) => {
+      const comment = errorFallbackCommentForPRClosedEvent();
+      createCommentOnGithub(app, comment, context);
     });
 }
 

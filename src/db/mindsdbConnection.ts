@@ -2,9 +2,9 @@ import MindsDB from "mindsdb-js-sdk";
 import { Probot } from "probot";
 
 export async function connectMindsDB(app: Probot) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
-      MindsDB.connect({
+      await MindsDB.connect({
         user: "",
         password: "",
         host: "http://127.0.0.1:47334",

@@ -34,13 +34,13 @@ export async function getAllFiles(
     }));
 
     app.log.info(
-      `Total ${filePaths.length} files are eligible for processing from repository: ${owner}/${repoName} for installation id: ${installationId}`
+      `Total ${filePaths.length} files are eligible for processing from repository: [${owner}/${repoName}] for installation id: [${installationId}]`
     );
 
     const filesLimit = configs.all_files.file_array_limit;
     if (filePaths.length > filesLimit) {
       app.log.warn(
-        `More than ${filesLimit} files are fetched, cannot proceed further for ${owner}/${repoName} with installation id: ${installationId}`
+        `More than ${filesLimit} files are fetched, cannot proceed further for [${owner}/${repoName}] with installation id: [${installationId}]`
       );
       return [];
     }
@@ -48,7 +48,7 @@ export async function getAllFiles(
     return filePaths;
   } catch (error: any) {
     app.log.error(
-      `Error occurred while fetching all files for ${owner}/${repoName} and installation id: ${installationId}`
+      `Error occurred while fetching all files for [${owner}/${repoName}] and installation id: [${installationId}]`
     );
     app.log.error(error);
     return [];
@@ -82,13 +82,13 @@ export async function getAllFilesFromPullRequest(
     }));
 
     app.log.info(
-      `Total ${files.length} files fetched from github for pull request(number:${pullNumber}) of the repository: ${owner}/${repoName}`
+      `Total ${files.length} files fetched from github for pull request(number:${pullNumber}) of the repository: [${owner}/${repoName}]`
     );
 
     return files;
   } catch (error: any) {
     app.log.error(
-      `Error occurred while fetching all files for repository: ${owner}/${repoName} and pull request number: ${pullNumber}`
+      `Error occurred while fetching all files for repository: [${owner}/${repoName}] and pull request number: [${pullNumber}]`
     );
     app.log.error(error);
     return [];

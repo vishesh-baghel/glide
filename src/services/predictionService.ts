@@ -18,19 +18,23 @@ const {
 const databaseName = "mongo_datasource";
 const projectName = "mindsdb";
 const predictorName = "riskscore_predictor";
+const aggregationQuery = `test.trainingfiles.find({})`;
 
 export async function retrainModel(app: Probot) {
   trainModel(app);
 }
 
+async function connectToMindsDB() {
+  await MindsDB.connect({
+    user: "",
+    password: "",
+    host: MINDSDB_HOST,
+  });
+}
+
 async function trainModel(app: Probot) {
   try {
-    await MindsDB.connect({
-      user: "",
-      password: "",
-      host: MINDSDB_HOST,
-    });
-
+    app.log.info(`Started training the model: [${predictorName}]`);
     const dbList: Database[] = await MindsDB.Databases.getAllDatabases();
     const dbNames: string[] = dbList.map((db: Database) => db.name);
 
@@ -40,8 +44,12 @@ async function trainModel(app: Probot) {
     }
 
     const regressionTrainingOptions: TrainingOptions = {
-      select: `SELECT * FROM mongo_datasource.files`,
-      integration: "mongo_datasource",
+      select: aggregationQuery,
+      integration: databaseName,
+      orderBy: "createdAt",
+      groupBy: "installationId",
+      window: 100, // How many rows in the past to use when making a future prediction.
+      horizon: 10, // How many rows in the future to forecast.
     };
 
     let predictionModel: Model | undefined = await MindsDB.Models.trainModel(
@@ -51,19 +59,19 @@ async function trainModel(app: Probot) {
       regressionTrainingOptions
     );
 
-    setInterval(async () => {
+    const intervalId = setInterval(async () => {
       predictionModel = await MindsDB.Models.getModel(
-        "riskscore_predictor",
+        predictorName,
         projectName
       );
-      app.log.info("Fetching predictor model");
-    }, 10000);
 
-    if (predictionModel?.active) {
-      app.log.info("Prediction model is active");
-    }
+      if (predictionModel?.active) {
+        app.log.info("Prediction model is active");
+        clearInterval(intervalId);
+      }
+    }, 2000);
 
-    app.log.info("training completed");
+    app.log.info(`training completed for [${predictorName}]`);
   } catch (error: any) {
     app.log.error("Error while training the model");
     app.log.error(error);
