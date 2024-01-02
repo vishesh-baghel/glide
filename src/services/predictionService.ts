@@ -7,7 +7,6 @@ import MindsDB, {
 } from "mindsdb-js-sdk";
 
 const {
-  MINDSDB_HOST,
   MONGODB_USER,
   MONGODB_PASSWORD,
   MONGODB_PORT,
@@ -18,22 +17,45 @@ const {
 const databaseName = "mongo_datasource";
 const projectName = "mindsdb";
 const predictorName = "riskscore_predictor";
+const targetField = "riskScore";
 const aggregationQuery = `test.trainingfiles.find({})`;
 
-export async function retrainModel(app: Probot) {
-  trainModel(app);
+const regressionTrainingOptions: TrainingOptions = {
+  select: aggregationQuery,
+  integration: databaseName,
+  orderBy: "createdAt",
+  groupBy: "installationId",
+  window: 100, // How many rows in the past to use when making a future prediction.
+  horizon: 10, // How many rows in the future to forecast.
+};
+
+export async function retrainPredictorModel(app: Probot) {
+  await MindsDB.Models.retrainModel(
+    predictorName,
+    targetField,
+    projectName,
+    regressionTrainingOptions
+  )
+    .then(() => {
+      app.log.info(`[${predictorName}] model is retrained successfully`);
+    })
+    .catch((error: any) => {
+      app.log.error(
+        `Error occurred while retraining the model [${predictorName}]`
+      );
+      app.log.error(error);
+    });
 }
 
-async function connectToMindsDB() {
-  await MindsDB.connect({
-    user: "",
-    password: "",
-    host: MINDSDB_HOST,
-  });
-}
-
-async function trainModel(app: Probot) {
+export async function trainPredictorModel(app: Probot) {
   try {
+    const models: Model[] = await MindsDB.Models.getAllModels(projectName);
+    const modelNames = models.map((model: Model) => model.name);
+
+    if (modelNames.includes(predictorName)) {
+      app.log.info(`[${predictorName}] model is already present in mindsdb`);
+      return;
+    }
     app.log.info(`Started training the model: [${predictorName}]`);
     const dbList: Database[] = await MindsDB.Databases.getAllDatabases();
     const dbNames: string[] = dbList.map((db: Database) => db.name);
@@ -43,18 +65,9 @@ async function trainModel(app: Probot) {
       app.log.info(`Created database: ${db?.name} in mindsdb successfully`);
     }
 
-    const regressionTrainingOptions: TrainingOptions = {
-      select: aggregationQuery,
-      integration: databaseName,
-      orderBy: "createdAt",
-      groupBy: "installationId",
-      window: 100, // How many rows in the past to use when making a future prediction.
-      horizon: 10, // How many rows in the future to forecast.
-    };
-
     let predictionModel: Model | undefined = await MindsDB.Models.trainModel(
       predictorName,
-      "riskScore",
+      targetField,
       projectName,
       regressionTrainingOptions
     );
@@ -65,8 +78,8 @@ async function trainModel(app: Probot) {
         projectName
       );
 
-      if (predictionModel?.active) {
-        app.log.info("Prediction model is active");
+      if (predictionModel?.status.match("error")) {
+        app.log.info("Prediction model training is complete");
         clearInterval(intervalId);
       }
     }, 2000);

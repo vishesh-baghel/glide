@@ -10,6 +10,7 @@ import { fetchDetailsWithInstallationId } from "../fetch/fetch";
 import { FileType } from "../types/FileType";
 import { TrainingFile } from "../db/models/TrainingFile";
 import { TrainingFileType } from "../types/TrainingFileType";
+import { retrainPredictorModel } from "./predictionService";
 
 export async function processRepositories(
   app: Probot,
@@ -38,9 +39,9 @@ async function processRepositoryBatch(
   owner: string,
   repositories: any[]
 ): Promise<void> {
-  await Promise.all(
-    repositories.map(async (repo) => {
-      try {
+  try {
+    await Promise.all(
+      repositories.map(async (repo) => {
         app.log.info(`Started processing repository: [${repo.name}]`);
 
         const defaultBranch = await getDefaultBranch(
@@ -119,11 +120,14 @@ async function processRepositoryBatch(
         app.log.info(
           `Completed the processing of [${owner}/${repo.name}] repository successfully for installation id: [${installationId}]`
         );
-      } catch (error: any) {
-        app.log.error(error);
-      }
-    })
-  );
+
+        retrainPredictorModel(app);
+      })
+    );
+  } catch (error: any) {
+    app.log.error(`Error while processing the repository batch`);
+    app.log.error(error);
+  }
 }
 
 async function getDefaultBranch(

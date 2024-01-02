@@ -8,7 +8,7 @@ import { getAllCommits } from "../fetch/fetchCommits";
 import { calculateRiskScore } from "./riskScoreService";
 import { FileType } from "../types/FileType";
 import { FileStatus } from "../constants/GithubContants";
-import { retrainModel } from "./predictionService";
+import { retrainPredictorModel } from "./predictionService";
 import { TrainingFileType } from "../types/TrainingFileType";
 import { TrainingFile } from "../db/models/TrainingFile";
 
@@ -142,7 +142,7 @@ export async function updateFilesInDb(
       `Updated the files coming from pull request with ref: [${owner}/${repoName}/pulls/${pullNumber}] successfully for installation id: [${installationId}]`
     );
 
-    retrainModel(app);
+    retrainPredictorModel(app);
 
     return true;
   } catch (error: any) {

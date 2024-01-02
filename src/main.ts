@@ -16,7 +16,7 @@ import {
 import { FileScoreMap } from "./types/FileScoreMap";
 import { isValidFilePath } from "./fetch/fetchFiles";
 import { connectMindsDB } from "./db/mindsdbConnection";
-import { retrainModel } from "./services/predictionService";
+import { trainPredictorModel } from "./services/predictionService";
 import {
   errorFallbackCommentForPRClosedEvent,
   errorFallbackCommentForPROpenEvent,
@@ -30,7 +30,7 @@ export async function main(app: Probot) {
   handleAppInstallationCreatedEvents(app);
   handlePullRequestOpenEvents(app);
   handlePullRequestClosedEvents(app);
-  retrainModel(app);
+  trainPredictorModel(app);
   debug(app);
 }
 
