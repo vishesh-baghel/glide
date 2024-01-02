@@ -6,8 +6,11 @@ import { FileScoreMap } from "../types/FileScoreMap";
 import { Commit } from "../types/Commit";
 import { getAllCommits } from "../fetch/fetchCommits";
 import { calculateRiskScore } from "./riskScoreService";
-import { FileType } from "../types/File";
+import { FileType } from "../types/FileType";
 import { FileStatus } from "../constants/GithubContants";
+import { retrainPredictorModel } from "./predictionService";
+import { TrainingFileType } from "../types/TrainingFileType";
+import { TrainingFile } from "../db/models/TrainingFile";
 
 export async function processPullRequestOpenEvent(
   app: Probot,
@@ -46,14 +49,14 @@ export async function updateFilesInDb(
     // merged with the default branch
     if (!isMerged) {
       app.log.warn(
-        `Files are not updated, because this pull request(ref: ${owner}/${repoName}/pulls/${pullNumber}) closed event is not being merged into default branch`
+        `Files are not updated, because this pull request(ref: [${owner}/${repoName}/pulls/${pullNumber}]) closed event is not being merged into default branch`
       );
       return false;
     }
 
     if (responseFiles.length === 0) {
       app.log.warn(
-        `There are no files modified in the pull request with ref: ${owner}/${repoName}/pulls/${pullNumber} and installationId: ${installationId}`
+        `There are no files modified in the pull request with ref: [${owner}/${repoName}/pulls/${pullNumber}] and installationId: [${installationId}]`
       );
       return false;
     }
@@ -93,9 +96,16 @@ export async function updateFilesInDb(
         const update = {
           commits: file.commits,
           riskScore: file.riskScore,
+          predictedRiskScore: file.predictedRiskScore,
         };
 
-        await File.updateOne(filter, update);
+        const trainingFile: TrainingFileType =
+          createTrainingFileTypeObject(file);
+
+        await Promise.all([
+          File.updateOne(filter, update),
+          TrainingFile.create(trainingFile),
+        ]);
       } else if (addFileStatuses.includes(responseFile.status)) {
         // create new files in the db
         const file: FileType = await createFileTypeObject(
@@ -107,7 +117,13 @@ export async function updateFilesInDb(
           defaultBranch
         );
 
-        await File.create(file);
+        const trainingFile: TrainingFileType =
+          createTrainingFileTypeObject(file);
+
+        await Promise.all([
+          File.create(file),
+          TrainingFile.create(trainingFile),
+        ]);
       } else if (removeFileStatuses.includes(responseFile.status)) {
         const filter = {
           installationId: installationId,
@@ -115,13 +131,18 @@ export async function updateFilesInDb(
           repoName: repoName,
           filePath: responseFile.filePath,
         };
-        await File.deleteOne(filter);
+        await Promise.all([
+          File.deleteOne(filter),
+          TrainingFile.deleteOne(filter),
+        ]);
       }
     });
 
     app.log.info(
-      `Updated the files coming from pull request with ref: ${owner}/${repoName}/pulls/${pullNumber} successfully for installation id: ${installationId}`
+      `Updated the files coming from pull request with ref: [${owner}/${repoName}/pulls/${pullNumber}] successfully for installation id: [${installationId}]`
     );
+
+    retrainPredictorModel(app);
 
     return true;
   } catch (error: any) {
@@ -186,12 +207,14 @@ async function createFileScoreMap(
         return {
           fileName: file.filePath,
           score: 0,
+          predictedScore: 0,
         };
       }
 
       return {
         fileName: file.filePath,
         score: fileObject.riskScore,
+        predictedScore: fileObject.predictedRiskScore,
       };
     })
   );
@@ -228,6 +251,8 @@ async function createFileTypeObject(
     filePath
   );
   const riskScore = calculateRiskScore(app, commits);
+  // fetch predicted risk score
+  const predictedRiskScore = 0;
 
   return {
     installationId,
@@ -236,5 +261,17 @@ async function createFileTypeObject(
     filePath,
     commits,
     riskScore,
+    predictedRiskScore,
+  };
+}
+
+function createTrainingFileTypeObject(file: FileType): TrainingFileType {
+  return {
+    installationId: file.installationId,
+    owner: file.owner,
+    repoName: file.repoName,
+    filePath: file.filePath,
+    numberOfCommits: file.commits.length,
+    riskScore: file.riskScore,
   };
 }

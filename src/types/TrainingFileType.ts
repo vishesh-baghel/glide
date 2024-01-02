@@ -1,10 +1,8 @@
-import { Commit } from "./Commit";
-
-export type FileType = {
+export type TrainingFileType = {
   installationId: number;
   owner: string;
   repoName: string;
   filePath: string;
-  commits: Commit[];
+  numberOfCommits: number;
   riskScore: number;
 };

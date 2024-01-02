@@ -1,6 +1,10 @@
 import { Probot } from "probot";
 import { FileScoreMap } from "../types/FileScoreMap";
 import json2md from "json2md";
+import {
+  errorFallbackCommentForPROpenEvent,
+  pullRequestOpenComment,
+} from "../constants/Comments";
 
 export async function createCommentOnGithub(
   app: Probot,
@@ -19,23 +23,18 @@ export async function constructComment(
   files: FileScoreMap[]
 ): Promise<string> {
   const rows: string[][] = files.map((file: FileScoreMap) => {
-    return [`${file.fileName}`, `${file.score.toFixed(2)}`];
+    return [
+      `${file.fileName}`,
+      `${file.score.toFixed(2)}`,
+      `${file.predictedScore.toFixed(2)}`,
+    ];
   });
 
   if (rows.length === 0 || rows === undefined || rows === null) {
     app.log.error("File rows are invalid. cannot construct comment");
-    return "We are facing some trouble. The bot will not be able to show the bug prone files";
+    return errorFallbackCommentForPROpenEvent();
   }
 
-  const md = json2md([
-    { h2: "Pay more attention while reviewing these files" },
-    {
-      blockquote:
-        "This curated list helps you focus on files that may have significant issues. Files are prioritized by their risk scores. A risk score of zero may indicate a new file or insufficient historical data. Your attention to these files is greatly appreciated!",
-    },
-    {
-      table: { headers: ["File Path", "Risk Score"], rows: rows },
-    },
-  ]);
-  return md;
+  const markdown = json2md(pullRequestOpenComment(rows));
+  return markdown;
 }

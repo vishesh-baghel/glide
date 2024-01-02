@@ -7,6 +7,10 @@ import { FilePath } from "../types/FilePath";
 import { File } from "../db/models/File";
 import configs from "../configs/fetch.configs.json";
 import { fetchDetailsWithInstallationId } from "../fetch/fetch";
+import { FileType } from "../types/FileType";
+import { TrainingFile } from "../db/models/TrainingFile";
+import { TrainingFileType } from "../types/TrainingFileType";
+import { retrainPredictorModel } from "./predictionService";
 
 export async function processRepositories(
   app: Probot,
@@ -19,7 +23,9 @@ export async function processRepositories(
   const installationId: number = installation.id;
   const owner = installation.account.login;
 
-  app.log.info(`Started the processing of repositories for ${installationId}`);
+  app.log.info(
+    `Started the processing of repositories for [${installationId}]`
+  );
 
   for (let i = 0; i < repos.length; i += batchSize) {
     const batch = repos.slice(i, i + batchSize);
@@ -33,10 +39,10 @@ async function processRepositoryBatch(
   owner: string,
   repositories: any[]
 ): Promise<void> {
-  await Promise.all(
-    repositories.map(async (repo) => {
-      try {
-        app.log.info(`Started processing repository: ${repo.name}`);
+  try {
+    await Promise.all(
+      repositories.map(async (repo) => {
+        app.log.info(`Started processing repository: [${repo.name}]`);
 
         const defaultBranch = await getDefaultBranch(
           app,
@@ -54,12 +60,12 @@ async function processRepositoryBatch(
         );
 
         app.log.info(
-          `Received Total ${fileNames.length} files for processing from repository: ${owner}/${repo.name} with installation id: ${installationId}`
+          `Received Total ${fileNames.length} files for processing from repository: [${owner}/${repo.name}] with installation id: [${installationId}]`
         );
 
         if (fileNames.length === 0) {
           app.log.warn(
-            `Cannot proceed further, because files are not available for ${owner}/${repo.name} with installation id: ${installationId}`
+            `Cannot proceed further, because files are not available for [${owner}/${repo.name}] with installation id: [${installationId}]`
           );
           return;
         }
@@ -80,30 +86,48 @@ async function processRepositoryBatch(
 
         if (fileCommitMaps.length === 0) {
           app.log.warn(
-            `Cannot proceed to save files, because either file-commit-map is empty or it exceeded the allowed size limit for ${owner}/${repo.name} with installation id: ${installationId}`
+            `Cannot proceed to save files, because either file-commit-map is empty or it exceeded the allowed size limit for [${owner}/${repo.name}] with installation id: [${installationId}]`
           );
           return;
         }
 
-        const files = fileCommitMaps.map(({ file, commits }) => ({
+        const files: FileType[] = fileCommitMaps.map(({ file, commits }) => ({
           installationId: installationId,
           owner: owner,
           repoName: repo.name,
           filePath: file.path,
           commits: commits,
           riskScore: calculateRiskScore(app, commits),
+          predictedRiskScore: 0, // we have no predicted value as of yet, because this file is newly added
         }));
 
-        await Promise.all([File.insertMany(files)]);
+        const trainingFiles: TrainingFileType[] = files.map(
+          (file: FileType) => ({
+            installationId: file.installationId,
+            owner: file.owner,
+            repoName: file.repoName,
+            filePath: file.filePath,
+            riskScore: file.riskScore,
+            numberOfCommits: file.commits.length, // FIXME: length is zero in the db. it should not because commits array is not zero in files collection
+          })
+        );
+
+        await Promise.all([
+          File.insertMany(files),
+          TrainingFile.insertMany(trainingFiles),
+        ]);
 
         app.log.info(
-          `Completed the processing of ${owner}/${repo.name} repository successfully for installation id: ${installationId}`
+          `Completed the processing of [${owner}/${repo.name}] repository successfully for installation id: [${installationId}]`
         );
-      } catch (error: any) {
-        app.log.error(error);
-      }
-    })
-  );
+
+        retrainPredictorModel(app);
+      })
+    );
+  } catch (error: any) {
+    app.log.error(`Error while processing the repository batch`);
+    app.log.error(error);
+  }
 }
 
 async function getDefaultBranch(

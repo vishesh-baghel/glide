@@ -7,9 +7,10 @@ const FileSchema = new Schema({
   repoName: { type: String, required: true },
   filePath: { type: String, required: true },
   commits: { type: [Commit], required: true },
-  riskScore: { type: Number, required: false },
+  riskScore: { type: Number, required: true },
+  predictedRiskScore: { type: Number, required: false },
   createdAt: { type: Date, default: new Date() },
   updatedAt: { type: Date, default: new Date() },
 });
 
-export const File = model("file", FileSchema);
+export const File = model("repoFile", FileSchema);

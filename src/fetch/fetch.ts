@@ -33,7 +33,7 @@ function fetchDetailsWithInstallationId(
       resolve(data);
     } catch (err: any) {
       app.log.error(
-        `Error while fetching resource details for resource url: ${endpoint}`
+        `Error while fetching resource details for resource url: [${endpoint}]`
       );
       reject(err);
     }
@@ -52,7 +52,7 @@ function fetchDetails(
       resolve(data);
     } catch (err: any) {
       app.log.error(
-        `Error while fetching resource details for resource url: ${endpoint}`
+        `Error while fetching resource details for resource url: [${endpoint}]`
       );
       reject(err);
     }

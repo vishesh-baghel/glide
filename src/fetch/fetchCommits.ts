@@ -63,7 +63,7 @@ export async function getAllCommits(
     const commitArrayLimit = configs.all_commits.commit_array_limit;
     if (allCommits.length > commitArrayLimit) {
       app.log.warn(
-        `More than ${commitArrayLimit} commits are fetched, cannot proceed further for ${owner}/${repoName} with installation id: ${installationId}`
+        `More than ${commitArrayLimit} commits are fetched, cannot proceed further for [${owner}/${repoName}] with installation id: [${installationId}]`
       );
       return [];
     }
@@ -71,7 +71,7 @@ export async function getAllCommits(
     return allCommits;
   } catch (error: any) {
     app.log.error(
-      `Error while fetching all commits for filePath ${filePath} of repository:${owner}/${repoName} and installation id: ${installationId}`
+      `Error while fetching all commits for filePath ${filePath} of repository:[${owner}/${repoName}] and installation id: [${installationId}]`
     );
     app.log.error(error);
     throw error;
