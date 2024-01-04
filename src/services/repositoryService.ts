@@ -11,6 +11,8 @@ import { FileType } from "../types/FileType";
 import { TrainingFile } from "../db/models/TrainingFile";
 import { TrainingFileType } from "../types/TrainingFileType";
 import { retrainPredictorModel } from "./predictionService";
+import { Job } from "../types/Job";
+import { JobModel, JobStatus } from "../db/models/Job";
 
 export async function processRepositories(
   app: Probot,
@@ -31,6 +33,8 @@ export async function processRepositories(
     const batch = repos.slice(i, i + batchSize);
     await processRepositoryBatch(app, installationId, owner, batch);
   }
+
+  retrainPredictorModel(app);
 }
 
 async function processRepositoryBatch(
@@ -112,16 +116,33 @@ async function processRepositoryBatch(
           })
         );
 
+        /**
+         * When a new app installation happen, there will be no predicted scores present
+         * for the files in the DB because of incomplete training of the predictor model.
+         * once the predictor model generates the scores for all the files that are newly added to
+         * the DB, the scheduler will be responsible to update them with the predicted scores
+         */
+        const jobs: Job[] = files.map((file: FileType) => ({
+          jobName: "app-installation-job",
+          parameters: {
+            installationId: file.installationId,
+            owner: file.owner,
+            repoName: file.repoName,
+            filePath: file.filePath,
+          },
+          status: JobStatus.Incomplete,
+          scheduledAt: new Date(),
+        }));
+
         await Promise.all([
           File.insertMany(files),
           TrainingFile.insertMany(trainingFiles),
+          JobModel.insertMany(jobs),
         ]);
 
         app.log.info(
           `Completed the processing of [${owner}/${repo.name}] repository successfully for installation id: [${installationId}]`
         );
-
-        retrainPredictorModel(app);
       })
     );
   } catch (error: any) {

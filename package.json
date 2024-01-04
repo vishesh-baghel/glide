@@ -29,7 +29,8 @@
     "node": "^20.10.0",
     "octokit": "^3.1.2",
     "probot": "^12.2.4",
-    "smee-client": "^1.2.5"
+    "smee-client": "^1.2.5",
+    "toad-scheduler": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",

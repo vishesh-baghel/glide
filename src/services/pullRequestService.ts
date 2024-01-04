@@ -3,14 +3,17 @@ import { getAllFilesFromPullRequest } from "../fetch/fetchFiles";
 import { GithubResponseFile } from "../types/GithubResponseFile";
 import { File } from "../db/models/File";
 import { FileScoreMap } from "../types/FileScoreMap";
-import { Commit } from "../types/Commit";
-import { getAllCommits } from "../fetch/fetchCommits";
-import { calculateRiskScore } from "./riskScoreService";
 import { FileType } from "../types/FileType";
 import { FileStatus } from "../constants/GithubContants";
-import { retrainPredictorModel } from "./predictionService";
 import { TrainingFileType } from "../types/TrainingFileType";
 import { TrainingFile } from "../db/models/TrainingFile";
+import { Job } from "../types/Job";
+import { JobModel, JobStatus } from "../db/models/Job";
+import {
+  createFileTypeObject,
+  createJobTypeObject,
+  createTrainingFileTypeObject,
+} from "../utils";
 
 export async function processPullRequestOpenEvent(
   app: Probot,
@@ -76,8 +79,7 @@ export async function updateFilesInDb(
 
     responseFiles.forEach(async (responseFile: GithubResponseFile) => {
       if (updateFileStatuses.includes(responseFile.status)) {
-        // update the files
-        const file: FileType = await createFileTypeObject(
+        handleFileUpdates(
           app,
           responseFile.filePath,
           installationId,
@@ -85,30 +87,8 @@ export async function updateFilesInDb(
           repoName,
           defaultBranch
         );
-
-        const filter = {
-          installationId: file.installationId,
-          owner: file.owner,
-          repoName: file.repoName,
-          filePath: file.filePath,
-        };
-
-        const update = {
-          commits: file.commits,
-          riskScore: file.riskScore,
-          predictedRiskScore: file.predictedRiskScore,
-        };
-
-        const trainingFile: TrainingFileType =
-          createTrainingFileTypeObject(file);
-
-        await Promise.all([
-          File.updateOne(filter, update),
-          TrainingFile.create(trainingFile),
-        ]);
       } else if (addFileStatuses.includes(responseFile.status)) {
-        // create new files in the db
-        const file: FileType = await createFileTypeObject(
+        handleFileAdditions(
           app,
           responseFile.filePath,
           installationId,
@@ -116,25 +96,13 @@ export async function updateFilesInDb(
           repoName,
           defaultBranch
         );
-
-        const trainingFile: TrainingFileType =
-          createTrainingFileTypeObject(file);
-
-        await Promise.all([
-          File.create(file),
-          TrainingFile.create(trainingFile),
-        ]);
       } else if (removeFileStatuses.includes(responseFile.status)) {
-        const filter = {
-          installationId: installationId,
-          owner: owner,
-          repoName: repoName,
-          filePath: responseFile.filePath,
-        };
-        await Promise.all([
-          File.deleteOne(filter),
-          TrainingFile.deleteOne(filter),
-        ]);
+        handleFileDeletions(
+          installationId,
+          owner,
+          repoName,
+          responseFile.filePath
+        );
       }
     });
 
@@ -142,12 +110,108 @@ export async function updateFilesInDb(
       `Updated the files coming from pull request with ref: [${owner}/${repoName}/pulls/${pullNumber}] successfully for installation id: [${installationId}]`
     );
 
-    retrainPredictorModel(app);
-
     return true;
   } catch (error: any) {
     throw error;
   }
+}
+
+async function handleFileUpdates(
+  app: Probot,
+  filePath: string,
+  installationId: number,
+  owner: string,
+  repoName: string,
+  defaultBranch: string
+) {
+  // update the files
+  const file: FileType = await createFileTypeObject(
+    app,
+    filePath,
+    installationId,
+    owner,
+    repoName,
+    defaultBranch
+  );
+
+  const filter = {
+    installationId: file.installationId,
+    owner: file.owner,
+    repoName: file.repoName,
+    filePath: file.filePath,
+  };
+
+  const update = {
+    commits: file.commits,
+    riskScore: file.riskScore,
+    predictedRiskScore: file.predictedRiskScore,
+  };
+
+  const trainingFile: TrainingFileType = createTrainingFileTypeObject(file);
+
+  /**
+   * Since, a file is updated there is a need to repredict the
+   * risk score due to new changes(if any). Hence, the need to
+   * create a new job everytime a file has been updated
+   */
+  const job: Job = createJobTypeObject(
+    file,
+    "file-update-job",
+    JobStatus.Incomplete
+  );
+
+  await Promise.all([
+    File.updateOne(filter, update),
+    TrainingFile.create(trainingFile),
+    JobModel.create(job),
+  ]);
+}
+
+async function handleFileAdditions(
+  app: Probot,
+  filePath: string,
+  installationId: number,
+  owner: string,
+  repoName: string,
+  defaultBranch: string
+) {
+  // create new files in the db
+  const file: FileType = await createFileTypeObject(
+    app,
+    filePath,
+    installationId,
+    owner,
+    repoName,
+    defaultBranch
+  );
+
+  const trainingFile: TrainingFileType = createTrainingFileTypeObject(file);
+  const job: Job = createJobTypeObject(
+    file,
+    "file-addition-job",
+    JobStatus.Incomplete
+  );
+
+  await Promise.all([
+    File.create(file),
+    TrainingFile.create(trainingFile),
+    JobModel.create(job),
+  ]);
+}
+
+async function handleFileDeletions(
+  installationId: number,
+  owner: string,
+  repoName: string,
+  filePath: string
+) {
+  const filter = {
+    installationId: installationId,
+    owner: owner,
+    repoName: repoName,
+    filePath: filePath,
+  };
+  await Promise.all([File.deleteOne(filter), TrainingFile.deleteOne(filter)]);
 }
 
 async function extractFileDetailsFromPREventPayload(app: Probot, payload: any) {
@@ -156,9 +220,6 @@ async function extractFileDetailsFromPREventPayload(app: Probot, payload: any) {
   const isMerged: boolean = pull_request.merged;
   const defaultBranch: string = repository.default_branch;
 
-  // todo: thinking how to use them
-  // const mainBranchRef: string = pull_request.base.ref;
-  // const mainBranchSha: string = pull_request.base.sha;
   const repoFullName: string = pull_request.base.repo.full_name;
   const installationId: number = installation.id;
 
@@ -220,58 +281,4 @@ async function createFileScoreMap(
   );
 
   return fileScoreMap;
-}
-
-/**
- * For updation, we would need to recalculate the risk scores,
- * For creation, we would need to calculate the scores for the first time.
- * This is the reason, we are reusing this function
- * @param app
- * @param filePath
- * @param installationId
- * @param owner
- * @param repoName
- * @param defaultBranch
- * @returns
- */
-async function createFileTypeObject(
-  app: Probot,
-  filePath: string,
-  installationId: number,
-  owner: string,
-  repoName: string,
-  defaultBranch: string
-): Promise<FileType> {
-  const commits: Commit[] = await getAllCommits(
-    app,
-    installationId,
-    owner,
-    repoName,
-    defaultBranch,
-    filePath
-  );
-  const riskScore = calculateRiskScore(app, commits);
-  // fetch predicted risk score
-  const predictedRiskScore = 0;
-
-  return {
-    installationId,
-    owner,
-    repoName,
-    filePath,
-    commits,
-    riskScore,
-    predictedRiskScore,
-  };
-}
-
-function createTrainingFileTypeObject(file: FileType): TrainingFileType {
-  return {
-    installationId: file.installationId,
-    owner: file.owner,
-    repoName: file.repoName,
-    filePath: file.filePath,
-    numberOfCommits: file.commits.length,
-    riskScore: file.riskScore,
-  };
 }

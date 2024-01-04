@@ -1,10 +1,14 @@
 import { Probot } from "probot";
 import MindsDB, {
+  BatchQueryOptions,
   Database,
   JsonValue,
   Model,
+  ModelPrediction,
   TrainingOptions,
 } from "mindsdb-js-sdk";
+import { resolve } from "path";
+import { Job } from "../types/Job";
 
 const {
   MONGODB_USER,
@@ -88,6 +92,49 @@ export async function trainPredictorModel(app: Probot) {
   } catch (error: any) {
     app.log.error("Error while training the model");
     app.log.error(error);
+  }
+}
+
+export async function fetchFromMindDB(app: Probot, jobs: Job[]) {
+  let model: Model | undefined;
+
+  await pollPredictorModelStatus()
+    .then((modelObj: Model | undefined) => {
+      model = modelObj;
+    })
+    .catch((error: any) => {
+      app.log.error("Error while polling the predictor model status");
+      app.log.error(error);
+    });
+
+  const queryOptions: BatchQueryOptions = {
+    join: "example_db.demo_data.house_sales",
+    // When using batch queries, the 't' alias is used for the joined data source ('t' is short for training/test).
+    // The 'm' alias is used for the trained model to be queried.
+    where: ["t.saledate > LATEST", 't.type = "house"'],
+    limit: 100,
+  };
+  const predictedScores: ModelPrediction[] | undefined =
+    await model?.batchQuery(queryOptions);
+
+  return predictedScores;
+}
+
+async function pollPredictorModelStatus() {
+  try {
+    const model: Model | undefined = await MindsDB.Models.getModel(
+      predictorName,
+      projectName
+    );
+
+    if (model?.status === "complete" || model?.status === "error") {
+      return model;
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return pollPredictorModelStatus();
+    }
+  } catch (error: any) {
+    throw error;
   }
 }
 
