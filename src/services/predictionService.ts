@@ -121,9 +121,17 @@ export async function queryMindDB(app: Probot, job: Job) {
         app.log.info(response);
       }
       const data: any = response.data;
-      const predictedScore = data.riskscore;
+      const file: FileType = {
+        installationId: data.installationid,
+        owner: data.owner,
+        repoName: data.reponame,
+        filePath: data.filepath,
+        commits: [], // won't update
+        riskScore: data.riskscore_original, // won't update
+        predictedRiskScore: data.riskscore,
+      };
 
-      return predictedScore;
+      return file;
     })
     .catch((error: any) => {
       app.log.error(
@@ -149,8 +157,6 @@ export async function batchQueryMindDB(
       );
       if (response === undefined) {
         throw new Error(`response is undefined`);
-      } else {
-        app.log.info(response);
       }
       const files: FileType[] = response.map((obj: ModelPrediction) => {
         const data: any = obj.data;

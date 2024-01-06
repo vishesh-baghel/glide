@@ -211,7 +211,12 @@ async function handleFileDeletions(
     repoName: repoName,
     filePath: filePath,
   };
-  await Promise.all([File.deleteOne(filter), TrainingFile.deleteOne(filter)]);
+
+  await Promise.all([
+    File.deleteOne(filter),
+    TrainingFile.deleteOne(filter),
+    JobModel.deleteOne({ parameters: filter }),
+  ]);
 }
 
 async function extractFileDetailsFromPREventPayload(app: Probot, payload: any) {

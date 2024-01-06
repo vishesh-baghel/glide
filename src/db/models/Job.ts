@@ -6,7 +6,7 @@ export enum JobStatus {
 }
 
 export enum JobName {
-  InstallationJob = "installation-job",
+  InstallationJob = "app-installation-job",
   FileUpdationJob = "file-updation-job",
 }
 

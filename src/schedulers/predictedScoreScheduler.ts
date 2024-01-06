@@ -5,7 +5,6 @@ import { Job } from "../types/Job";
 import { batchQueryMindDB, queryMindDB } from "../services/predictionService";
 import { getProbotInstance } from "../utils";
 import { File } from "../db/models/File";
-import { ModelPrediction } from "mindsdb-js-sdk";
 import { FileType } from "../types/FileType";
 
 const jobBatchSize = 1;
@@ -14,6 +13,12 @@ const scheduler = new ToadScheduler();
 
 export function updatePredictedScoresScheduler(app: Probot) {
   try {
+    /**
+     * It is important to use async task here, because it may happen
+     * that another job starts while the previous job is still in progress.
+     * So, to make sure the jobs doesn't queue up, it is important to make
+     * all jobs async to make sure every new job starts in a new thread.
+     */
     const task = new AsyncTask("Update-predicted-scores", jobHandler);
 
     const job = new SimpleIntervalJob({ seconds: 10 }, task, {
@@ -30,40 +35,40 @@ export function updatePredictedScoresScheduler(app: Probot) {
 const jobHandler = async () => {
   const app = getProbotInstance();
   try {
-    const installationJobs = await JobModel.find({
+    const installationJobs: Job[] = await JobModel.find({
       status: JobStatus.Incomplete,
       jobName: JobName.InstallationJob,
     }).limit(jobBatchSize);
 
-    const fileUpdationJobs = await JobModel.find({
+    const fileUpdationJobs: Job[] = await JobModel.find({
       status: JobStatus.Incomplete,
       jobName: JobName.FileUpdationJob,
-    });
+    }).limit(jobBatchSize);
 
-    const appInstallationJobPromises = handleAppInstallationJob(
-      app,
-      installationJobs
-    );
-
-    const fileUpdationJobPromises = handlePredictedScoreUpdationJob(
-      app,
-      fileUpdationJobs
-    );
-
-    await Promise.all([fileUpdationJobPromises, appInstallationJobPromises]);
-    app.log.info(`Updated predicted scores to the DB successfully`);
-    return "job complete";
+    app.log.info(installationJobs);
+    handleAppInstallationJob(app, installationJobs);
+    handleFileUpdationJob(app, fileUpdationJobs);
   } catch (error: any) {
     app.log.error(`Error in jobHandler: ${error.message}`);
-    throw error;
+    app.log.error(error);
   }
 };
 
-function handleAppInstallationJob(app: Probot, jobs: Job[]) {
-  return jobs.map(async (job: Job) => {
-    return batchQueryMindDB(app, job.parameters.installationId)
-      .then((files: FileType[]) => {
-        files.forEach((file: FileType) => {
+async function handleAppInstallationJob(app: Probot, jobs: Job[]) {
+  if (jobs.length === 0) {
+    app.log.info(`No app installation jobs left to complete`);
+    return;
+  }
+  app.log.info(`Started app installation job at: [${new Date()}]`);
+
+  for (const job of jobs) {
+    const isJobCompleted: Boolean = await checkIfJobIsAlreadyComplete(app, job);
+    if (isJobCompleted) {
+      continue;
+    }
+    batchQueryMindDB(app, job.parameters.installationId)
+      .then(async (files: FileType[]) => {
+        for (const file of files) {
           const filter = {
             installationId: file.installationId,
             owner: file.owner,
@@ -72,51 +77,106 @@ function handleAppInstallationJob(app: Probot, jobs: Job[]) {
           };
           const update = {
             predictedRiskScore: file.predictedRiskScore,
+            updatedAt: new Date(),
           };
 
-          return Promise.all([
+          await Promise.all([
             File.updateOne(filter, update),
-            JobModel.updateOne(filter, {
-              status: JobStatus.Complete,
-              completedAt: new Date(),
-            }),
+            /**
+             * Here, we are updating the job status for each file
+             * present in the current file batch. We have to use the
+             * filter object constructed with file details instead of
+             * job parameters to avoid redundant job fetching.
+             */
+            JobModel.updateOne(
+              { parameters: filter },
+              {
+                status: JobStatus.Complete,
+                completedAt: new Date(),
+              }
+            ),
           ]);
-        });
+        }
       })
       .catch((error: any) => {
-        app.log.error(
-          `Error while executing batch query on mindsdb: ${error.message}`
-        );
-        return Promise.reject(error);
+        app.log.error(`Error occurred while processing [${job.jobName}]`);
+        app.log.error(error);
       });
-  });
+  }
+  app.log.info(
+    `Completed app installation job successfully at [${new Date()}]`
+  );
 }
 
-function handlePredictedScoreUpdationJob(app: Probot, jobs: Job[]) {
-  return jobs.map(async (job: Job) => {
-    return queryMindDB(app, job)
-      .then((prediction: ModelPrediction | undefined) => {
-        if (prediction === undefined) {
-          throw new Error("Predicted score is undefined");
-        }
+async function handleFileUpdationJob(app: Probot, jobs: Job[]) {
+  if (jobs.length === 0) {
+    app.log.info(`No file updation jobs left to complete`);
+    return;
+  }
+  app.log.info(`Started file updation job at: [${new Date()}]`);
 
+  for (const job of jobs) {
+    const isJobCompleted: Boolean = await checkIfJobIsAlreadyComplete(app, job);
+    if (isJobCompleted) {
+      continue;
+    }
+
+    queryMindDB(app, job)
+      .then(async (file: FileType) => {
+        const filter = {
+          installationId: file.installationId,
+          owner: file.owner,
+          repoName: file.repoName,
+          filePath: file.filePath,
+        };
         const update = {
-          predictedScore: prediction?.value,
+          predictedRiskScore: file.predictedRiskScore,
+          updatedAt: new Date(),
         };
 
-        return Promise.all([
-          File.updateOne(job.parameters, update),
-          JobModel.updateOne(job.parameters, {
-            status: JobStatus.Complete,
-            completedAt: new Date(),
-          }),
+        await Promise.all([
+          File.updateOne(filter, update),
+          /**
+           * Updating many documents is necessary here because, it may
+           * happen that two jobs with same parameters but with different
+           * job names are present in the collection. So, to avoid redundant
+           * update calls it is important to update all the documents with
+           * matching filter.
+           */
+          JobModel.updateMany(
+            { parameters: filter },
+            {
+              status: JobStatus.Complete,
+              completedAt: new Date(),
+            }
+          ),
         ]);
       })
       .catch((error: any) => {
-        app.log.error(
-          `Error while fetching predicted score from mindsdb: ${error.message}`
-        );
-        return Promise.reject(error);
+        app.log.error(`Error occurred while processing [${job.jobName}]`);
+        app.log.error(error);
       });
+  }
+  app.log.info(`Completed file updation job successfully at [${new Date()}]`);
+}
+
+async function checkIfJobIsAlreadyComplete(app: Probot, job: Job) {
+  const jobObj: Job | null = await JobModel.findOne({
+    parameters: job.parameters,
   });
+  if (jobObj === null) {
+    app.log.error("job obj is null");
+  }
+  /**
+   * It may happen that the job in the jobs list is already updated due to
+   * batch update happening in the previous iteration. So, it's important
+   * to check the job status first to avoid redundant update DB calls
+   */
+  if (jobObj?.status === JobStatus.Complete) {
+    app.log.info(
+      `Skipping querying mindsdb, because the job status is complete already`
+    );
+    return true;
+  }
+  return false;
 }
