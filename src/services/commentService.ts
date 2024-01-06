@@ -23,13 +23,24 @@ export async function constructComment(
   files: FileScoreMap[]
 ): Promise<string> {
   const rows: string[][] = files.map((file: FileScoreMap) => {
+    let riskScore: number = file.score;
     let predictedScore: number | string = file.predictedScore;
     if (typeof predictedScore === "string") {
       predictedScore = parseFloat(predictedScore);
+    } else if (predictedScore === undefined) {
+      app.log.warn(
+        `Predicted score is undefined for file: ${JSON.stringify(file)}`
+      );
+      predictedScore = 0;
+    } else if (file.score === undefined) {
+      app.log.warn(
+        `Predicted score is undefined for file: ${JSON.stringify(file)}`
+      );
+      riskScore = 0;
     }
     return [
       `${file.fileName}`,
-      `${file.score.toFixed(2)}`,
+      `${riskScore.toFixed(2)}`,
       `${predictedScore.toFixed(2)}`, // todo: test it to check if it's working correctly after changing the type of predicted score
     ];
   });

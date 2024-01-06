@@ -76,7 +76,6 @@ async function handleAppInstallationJob(app: Probot, jobs: Job[]) {
       const isJobCompleted = await checkIfJobIsAlreadyComplete(app, job);
       if (!isJobCompleted) {
         await updateFileAndJobModels(
-          app,
           await queryMindDB(app, predictorModel, job)
         );
         await new Promise((resolve) =>
@@ -109,7 +108,6 @@ async function handleFileUpdationJob(app: Probot, jobs: Job[]) {
       const isJobCompleted = await checkIfJobIsAlreadyComplete(app, job);
       if (!isJobCompleted) {
         await updateFileAndJobModels(
-          app,
           await queryMindDB(app, predictorModel, job)
         );
         await new Promise((resolve) =>
@@ -127,7 +125,7 @@ async function handleFileUpdationJob(app: Probot, jobs: Job[]) {
   }
 }
 
-async function updateFileAndJobModels(app: Probot, file: FileType) {
+async function updateFileAndJobModels(file: FileType) {
   const filter = {
     installationId: file.installationId,
     owner: file.owner,
@@ -162,8 +160,6 @@ async function updateFileAndJobModels(app: Probot, file: FileType) {
       }
     ),
   ]);
-
-  app.log.info(`Updated models for file: ${JSON.stringify(file)}`);
 }
 
 /**
