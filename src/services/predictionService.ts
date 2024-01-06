@@ -1,10 +1,17 @@
 import { Probot } from "probot";
 import MindsDB, {
+  BatchQueryOptions,
   Database,
   JsonValue,
   Model,
+  ModelPrediction,
+  QueryOptions,
   TrainingOptions,
 } from "mindsdb-js-sdk";
+import { Job } from "../types/Job";
+import { getProbotInstance } from "../utils";
+import { FileType } from "../types/FileType";
+import fromExponential from "from-exponential";
 
 const {
   MONGODB_USER,
@@ -14,16 +21,20 @@ const {
   MONGODB_DATABASE,
 } = process.env;
 
-const databaseName = "mongo_datasource";
-const projectName = "mindsdb";
-const predictorName = "riskscore_predictor";
-const targetField = "riskScore";
+const databaseName = `mongo_datasource`;
+const projectName = `mindsdb`;
+const predictorName = `riskscore_predictor`;
+const targetField = `riskScore`;
 const aggregationQuery = `test.trainingfiles.find({})`;
+const joinQuery = `mongo_datasource.trainingfiles`;
+const mindsdbBatchQuerySize = 10;
+
+const app = getProbotInstance();
 
 const regressionTrainingOptions: TrainingOptions = {
   select: aggregationQuery,
   integration: databaseName,
-  orderBy: "createdAt",
+  // orderBy: "createdAt",
   groupBy: "installationId",
   window: 100, // How many rows in the past to use when making a future prediction.
   horizon: 10, // How many rows in the future to forecast.
@@ -78,7 +89,7 @@ export async function trainPredictorModel(app: Probot) {
         projectName
       );
 
-      if (predictionModel?.status.match("error")) {
+      if (!predictionModel?.status.match("error")) {
         app.log.info("Prediction model training is complete");
         clearInterval(intervalId);
       }
@@ -88,6 +99,99 @@ export async function trainPredictorModel(app: Probot) {
   } catch (error: any) {
     app.log.error("Error while training the model");
     app.log.error(error);
+  }
+}
+
+export async function queryMindDB(app: Probot, model: Model, job: Job) {
+  try {
+    const queryOptions: QueryOptions = {
+      where: [
+        `installationId=${job.parameters.installationId}`,
+        `owner="${job.parameters.owner}"`,
+        `repoName="${job.parameters.repoName}"`,
+        `filePath="${job.parameters.filePath}"`,
+      ],
+    };
+    const response: ModelPrediction | undefined = await model.query(
+      queryOptions
+    );
+    if (response === undefined) {
+      throw new Error("response is undefined");
+    }
+    const data: any = response.data;
+    const file: FileType = {
+      installationId: data.installationid,
+      owner: data.owner,
+      repoName: data.reponame,
+      filePath: data.filepath,
+      commits: [], // won't update
+      riskScore: data.riskscore_original, // won't update
+      predictedRiskScore: fromExponential(data.riskscore),
+    };
+
+    return file;
+  } catch (error: any) {
+    app.log.error(`Error while querying the predictor model: ${error.message}`);
+    throw error;
+  }
+}
+
+export async function batchQueryMindDB(
+  app: Probot,
+  installationId: number
+): Promise<FileType[]> {
+  return pollPredictorModelStatus()
+    .then(async (model: Model | undefined) => {
+      const queryOptions: BatchQueryOptions = {
+        join: joinQuery,
+        where: [`t.installationId=${installationId}`],
+        limit: mindsdbBatchQuerySize,
+      };
+      const response: ModelPrediction[] | undefined = await model?.batchQuery(
+        queryOptions
+      );
+      if (response === undefined) {
+        throw new Error(`response is undefined`);
+      }
+      const files: FileType[] = response.map((obj: ModelPrediction) => {
+        const data: any = obj.data;
+        return {
+          installationId: data.installationid,
+          owner: data.owner,
+          repoName: data.reponame,
+          filePath: data.filepath,
+          commits: [], // won't update in DB
+          riskScore: data.riskscore_original, // won't update in DB
+          predictedRiskScore: data.predicted, // convert e power to number
+        };
+      });
+
+      return files;
+    })
+    .catch((error: any) => {
+      app.log.error(
+        `Error while polling the predictor model status: ${error.message}`
+      );
+      throw error;
+    });
+}
+
+export async function pollPredictorModelStatus() {
+  try {
+    const model: Model | undefined = await MindsDB.Models.getModel(
+      predictorName,
+      projectName
+    );
+
+    if (model?.status === "complete" || model?.status === "error") {
+      app.log.info(`Returning model with status: ${model.status}`);
+      return model;
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return pollPredictorModelStatus();
+    }
+  } catch (error: any) {
+    throw error;
   }
 }
 

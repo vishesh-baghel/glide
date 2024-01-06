@@ -16,11 +16,16 @@ import {
 import { FileScoreMap } from "./types/FileScoreMap";
 import { isValidFilePath } from "./fetch/fetchFiles";
 import { connectMindsDB } from "./db/mindsdbConnection";
-import { trainPredictorModel } from "./services/predictionService";
+import {
+  retrainPredictorModel,
+  trainPredictorModel,
+} from "./services/predictionService";
 import {
   errorFallbackCommentForPRClosedEvent,
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
+import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
+import fromExponential from "from-exponential";
 
 const debugFlag: boolean = false;
 
@@ -32,6 +37,8 @@ export async function main(app: Probot) {
   handlePullRequestClosedEvents(app);
   trainPredictorModel(app);
   debug(app);
+  predictedScoresUpdationScheduler(app);
+  app.log.info(`${Number(fromExponential(1.3621763272908538e-8))}`);
 }
 
 function handleAppInstallationCreatedEvents(app: Probot) {
@@ -87,6 +94,8 @@ function handlePullRequestClosedEvents(app: Probot) {
             "Risk scores are updated for all the files modified in this pull request.";
           createCommentOnGithub(app, comment, context);
         }
+        retrainPredictorModel(app);
+
         return context;
       } catch (error: any) {
         app.log.error("Error while processing pull request closed event");

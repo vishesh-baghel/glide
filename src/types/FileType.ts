@@ -7,5 +7,5 @@ export type FileType = {
   filePath: string;
   commits: Commit[];
   riskScore: number;
-  predictedRiskScore: number;
+  predictedRiskScore: number | string;
 };
