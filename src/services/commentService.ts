@@ -23,10 +23,14 @@ export async function constructComment(
   files: FileScoreMap[]
 ): Promise<string> {
   const rows: string[][] = files.map((file: FileScoreMap) => {
+    let predictedScore: number | string = file.predictedScore;
+    if (typeof predictedScore === "string") {
+      predictedScore = parseFloat(predictedScore);
+    }
     return [
       `${file.fileName}`,
       `${file.score.toFixed(2)}`,
-      `${file.predictedScore.toFixed(2)}`,
+      `${predictedScore.toFixed(2)}`, // todo: test it to check if it's working correctly after changing the type of predicted score
     ];
   });
 

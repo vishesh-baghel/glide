@@ -11,6 +11,7 @@ import MindsDB, {
 import { Job } from "../types/Job";
 import { getProbotInstance } from "../utils";
 import { FileType } from "../types/FileType";
+import fromExponential from "from-exponential";
 
 const {
   MONGODB_USER,
@@ -101,44 +102,38 @@ export async function trainPredictorModel(app: Probot) {
   }
 }
 
-export async function queryMindDB(app: Probot, job: Job) {
-  return pollPredictorModelStatus()
-    .then(async (model: Model | undefined) => {
-      const queryOptions: QueryOptions = {
-        where: [
-          `installationId=${job.parameters.installationId}`,
-          `owner="${job.parameters.owner}"`,
-          `repoName="${job.parameters.repoName}"`,
-          `filePath="${job.parameters.filePath}"`,
-        ],
-      };
-      const response: ModelPrediction | undefined = await model?.query(
-        queryOptions
-      );
-      if (response === undefined) {
-        throw new Error("response is undefined");
-      } else {
-        app.log.info(response);
-      }
-      const data: any = response.data;
-      const file: FileType = {
-        installationId: data.installationid,
-        owner: data.owner,
-        repoName: data.reponame,
-        filePath: data.filepath,
-        commits: [], // won't update
-        riskScore: data.riskscore_original, // won't update
-        predictedRiskScore: data.riskscore,
-      };
+export async function queryMindDB(app: Probot, model: Model, job: Job) {
+  try {
+    const queryOptions: QueryOptions = {
+      where: [
+        `installationId=${job.parameters.installationId}`,
+        `owner="${job.parameters.owner}"`,
+        `repoName="${job.parameters.repoName}"`,
+        `filePath="${job.parameters.filePath}"`,
+      ],
+    };
+    const response: ModelPrediction | undefined = await model.query(
+      queryOptions
+    );
+    if (response === undefined) {
+      throw new Error("response is undefined");
+    }
+    const data: any = response.data;
+    const file: FileType = {
+      installationId: data.installationid,
+      owner: data.owner,
+      repoName: data.reponame,
+      filePath: data.filepath,
+      commits: [], // won't update
+      riskScore: data.riskscore_original, // won't update
+      predictedRiskScore: fromExponential(data.riskscore),
+    };
 
-      return file;
-    })
-    .catch((error: any) => {
-      app.log.error(
-        `Error while polling the predictor model status: ${error.message}`
-      );
-      throw error;
-    });
+    return file;
+  } catch (error: any) {
+    app.log.error(`Error while querying the predictor model: ${error.message}`);
+    throw error;
+  }
 }
 
 export async function batchQueryMindDB(
@@ -181,7 +176,7 @@ export async function batchQueryMindDB(
     });
 }
 
-async function pollPredictorModelStatus() {
+export async function pollPredictorModelStatus() {
   try {
     const model: Model | undefined = await MindsDB.Models.getModel(
       predictorName,
@@ -192,7 +187,7 @@ async function pollPredictorModelStatus() {
       app.log.info(`Returning model with status: ${model.status}`);
       return model;
     } else {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       return pollPredictorModelStatus();
     }
   } catch (error: any) {

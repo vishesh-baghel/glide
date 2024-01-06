@@ -24,7 +24,8 @@ import {
   errorFallbackCommentForPRClosedEvent,
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
-import { updatePredictedScoresScheduler } from "./schedulers/predictedScoreScheduler";
+import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
+import fromExponential from "from-exponential";
 
 const debugFlag: boolean = false;
 
@@ -36,7 +37,8 @@ export async function main(app: Probot) {
   handlePullRequestClosedEvents(app);
   trainPredictorModel(app);
   debug(app);
-  updatePredictedScoresScheduler(app);
+  predictedScoresUpdationScheduler(app);
+  app.log.info(`${Number(fromExponential(1.3621763272908538e-8))}`);
 }
 
 function handleAppInstallationCreatedEvents(app: Probot) {
