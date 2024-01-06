@@ -12,7 +12,7 @@ import { TrainingFile } from "../db/models/TrainingFile";
 import { TrainingFileType } from "../types/TrainingFileType";
 import { retrainPredictorModel } from "./predictionService";
 import { Job } from "../types/Job";
-import { JobModel, JobStatus } from "../db/models/Job";
+import { JobModel, JobName, JobStatus } from "../db/models/Job";
 
 export async function processRepositories(
   app: Probot,
@@ -123,7 +123,7 @@ async function processRepositoryBatch(
          * the DB, the scheduler will be responsible to update them with the predicted scores
          */
         const jobs: Job[] = files.map((file: FileType) => ({
-          jobName: "app-installation-job",
+          jobName: JobName.InstallationJob,
           parameters: {
             installationId: file.installationId,
             owner: file.owner,

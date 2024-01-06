@@ -1,7 +1,7 @@
-import { JobStatus } from "../db/models/Job";
+import { JobName, JobStatus } from "../db/models/Job";
 
 export type Job = {
-  jobName: string;
+  jobName: JobName;
   parameters: Record<string, any>;
   status: JobStatus;
   scheduledAt: Date;

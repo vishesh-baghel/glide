@@ -8,7 +8,7 @@ import { FileStatus } from "../constants/GithubContants";
 import { TrainingFileType } from "../types/TrainingFileType";
 import { TrainingFile } from "../db/models/TrainingFile";
 import { Job } from "../types/Job";
-import { JobModel, JobStatus } from "../db/models/Job";
+import { JobModel, JobName, JobStatus } from "../db/models/Job";
 import {
   createFileTypeObject,
   createJobTypeObject,
@@ -156,7 +156,7 @@ async function handleFileUpdates(
    */
   const job: Job = createJobTypeObject(
     file,
-    "file-update-job",
+    JobName.FileUpdationJob,
     JobStatus.Incomplete
   );
 
@@ -188,7 +188,7 @@ async function handleFileAdditions(
   const trainingFile: TrainingFileType = createTrainingFileTypeObject(file);
   const job: Job = createJobTypeObject(
     file,
-    "file-addition-job",
+    JobName.FileUpdationJob,
     JobStatus.Incomplete
   );
 

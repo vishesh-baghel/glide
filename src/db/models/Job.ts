@@ -5,8 +5,13 @@ export enum JobStatus {
   Incomplete = "incomplete",
 }
 
+export enum JobName {
+  InstallationJob = "installation-job",
+  FileUpdationJob = "file-updation-job",
+}
+
 interface Job {
-  jobName: string;
+  jobName: JobName;
   parameters: Record<string, any>;
   status: JobStatus.Complete | JobStatus.Incomplete;
   scheduledAt: Date;

@@ -4,7 +4,7 @@ import { Commit } from "./types/Commit";
 import { getAllCommits } from "./fetch/fetchCommits";
 import { calculateRiskScore } from "./services/riskScoreService";
 import { TrainingFileType } from "./types/TrainingFileType";
-import { JobStatus } from "./db/models/Job";
+import { JobName, JobStatus } from "./db/models/Job";
 import { Job } from "./types/Job";
 
 const { APP_ID, PRIVATE_KEY, WEBHOOK_SECRET } = process.env;
@@ -88,7 +88,7 @@ export function createTrainingFileTypeObject(file: FileType): TrainingFileType {
 
 export function createJobTypeObject(
   file: FileType,
-  jobName: string,
+  jobName: JobName,
   status: JobStatus
 ): Job {
   return {

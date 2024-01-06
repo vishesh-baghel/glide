@@ -5,10 +5,12 @@ import MindsDB, {
   JsonValue,
   Model,
   ModelPrediction,
+  QueryOptions,
   TrainingOptions,
 } from "mindsdb-js-sdk";
-import { resolve } from "path";
 import { Job } from "../types/Job";
+import { getProbotInstance } from "../utils";
+import { FileType } from "../types/FileType";
 
 const {
   MONGODB_USER,
@@ -18,16 +20,20 @@ const {
   MONGODB_DATABASE,
 } = process.env;
 
-const databaseName = "mongo_datasource";
-const projectName = "mindsdb";
-const predictorName = "riskscore_predictor";
-const targetField = "riskScore";
+const databaseName = `mongo_datasource`;
+const projectName = `mindsdb`;
+const predictorName = `riskscore_predictor`;
+const targetField = `riskScore`;
 const aggregationQuery = `test.trainingfiles.find({})`;
+const joinQuery = `mongo_datasource.trainingfiles`;
+const mindsdbBatchQuerySize = 10;
+
+const app = getProbotInstance();
 
 const regressionTrainingOptions: TrainingOptions = {
   select: aggregationQuery,
   integration: databaseName,
-  orderBy: "createdAt",
+  // orderBy: "createdAt",
   groupBy: "installationId",
   window: 100, // How many rows in the past to use when making a future prediction.
   horizon: 10, // How many rows in the future to forecast.
@@ -82,7 +88,7 @@ export async function trainPredictorModel(app: Probot) {
         projectName
       );
 
-      if (predictionModel?.status.match("error")) {
+      if (!predictionModel?.status.match("error")) {
         app.log.info("Prediction model training is complete");
         clearInterval(intervalId);
       }
@@ -95,29 +101,78 @@ export async function trainPredictorModel(app: Probot) {
   }
 }
 
-export async function fetchFromMindDB(app: Probot, jobs: Job[]) {
-  let model: Model | undefined;
+export async function queryMindDB(app: Probot, job: Job) {
+  return pollPredictorModelStatus()
+    .then(async (model: Model | undefined) => {
+      const queryOptions: QueryOptions = {
+        where: [
+          `installationId=${job.parameters.installationId}`,
+          `owner="${job.parameters.owner}"`,
+          `repoName="${job.parameters.repoName}"`,
+          `filePath="${job.parameters.filePath}"`,
+        ],
+      };
+      const response: ModelPrediction | undefined = await model?.query(
+        queryOptions
+      );
+      if (response === undefined) {
+        throw new Error("response is undefined");
+      } else {
+        app.log.info(response);
+      }
+      const data: any = response.data;
+      const predictedScore = data.riskscore;
 
-  await pollPredictorModelStatus()
-    .then((modelObj: Model | undefined) => {
-      model = modelObj;
+      return predictedScore;
     })
     .catch((error: any) => {
-      app.log.error("Error while polling the predictor model status");
-      app.log.error(error);
+      app.log.error(
+        `Error while polling the predictor model status: ${error.message}`
+      );
+      throw error;
     });
+}
 
-  const queryOptions: BatchQueryOptions = {
-    join: "example_db.demo_data.house_sales",
-    // When using batch queries, the 't' alias is used for the joined data source ('t' is short for training/test).
-    // The 'm' alias is used for the trained model to be queried.
-    where: ["t.saledate > LATEST", 't.type = "house"'],
-    limit: 100,
-  };
-  const predictedScores: ModelPrediction[] | undefined =
-    await model?.batchQuery(queryOptions);
+export async function batchQueryMindDB(
+  app: Probot,
+  installationId: number
+): Promise<FileType[]> {
+  return pollPredictorModelStatus()
+    .then(async (model: Model | undefined) => {
+      const queryOptions: BatchQueryOptions = {
+        join: joinQuery,
+        where: [`t.installationId=${installationId}`],
+        limit: mindsdbBatchQuerySize,
+      };
+      const response: ModelPrediction[] | undefined = await model?.batchQuery(
+        queryOptions
+      );
+      if (response === undefined) {
+        throw new Error(`response is undefined`);
+      } else {
+        app.log.info(response);
+      }
+      const files: FileType[] = response.map((obj: ModelPrediction) => {
+        const data: any = obj.data;
+        return {
+          installationId: data.installationid,
+          owner: data.owner,
+          repoName: data.reponame,
+          filePath: data.filepath,
+          commits: [], // won't update in DB
+          riskScore: data.riskscore_original, // won't update in DB
+          predictedRiskScore: data.predicted, // convert e power to number
+        };
+      });
 
-  return predictedScores;
+      return files;
+    })
+    .catch((error: any) => {
+      app.log.error(
+        `Error while polling the predictor model status: ${error.message}`
+      );
+      throw error;
+    });
 }
 
 async function pollPredictorModelStatus() {
@@ -128,6 +183,7 @@ async function pollPredictorModelStatus() {
     );
 
     if (model?.status === "complete" || model?.status === "error") {
+      app.log.info(`Returning model with status: ${model.status}`);
       return model;
     } else {
       await new Promise((resolve) => setTimeout(resolve, 1000));
