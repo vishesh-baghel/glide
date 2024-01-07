@@ -25,7 +25,6 @@ import {
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
 import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
-import fromExponential from "from-exponential";
 
 const debugFlag: boolean = false;
 
@@ -38,7 +37,6 @@ export async function main(app: Probot) {
   trainPredictorModel(app);
   debug(app);
   predictedScoresUpdationScheduler(app);
-  app.log.info(`${Number(fromExponential(1.3621763272908538e-8))}`);
 }
 
 function handleAppInstallationCreatedEvents(app: Probot) {
@@ -58,7 +56,6 @@ function handlePullRequestOpenEvents(app: Probot) {
   listeningForGithubWebhookEvents(app, events)
     .then(async (context: any) => {
       try {
-        app.log.info("Received an pull request opened event");
         const files: FileScoreMap[] = await processPullRequestOpenEvent(
           app,
           context.payload
@@ -84,7 +81,6 @@ function handlePullRequestClosedEvents(app: Probot) {
   listeningForGithubWebhookEvents(app, events)
     .then(async (context: any) => {
       try {
-        app.log.info("Received an pull request closed event");
         const areFilesUpdated: boolean = await updateFilesInDb(
           app,
           context.payload
