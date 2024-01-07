@@ -81,15 +81,13 @@ export function fileValidation(app: Probot, file: FileScoreMap) {
     };
   }
 
-  app.log.info(
-    `Formatting the riskScore and predictedRiskScore for file: ${JSON.stringify(
-      file
-    )}`
-  );
   return {
     fileName: fileName,
-    score: numberToStringFormatter(file.score),
-    predictedScore: numberToStringFormatter(file.predictedScore),
+    score: file.score === 0 ? "0.00" : numberToStringFormatter(file.score),
+    predictedScore:
+      file.predictedScore === 0
+        ? "0.00"
+        : numberToStringFormatter(file.predictedScore),
   };
 }
 
