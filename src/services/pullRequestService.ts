@@ -89,7 +89,7 @@ export async function updateFilesInDb(
 
     const removeFileStatuses: FileStatus[] = [FileStatus.Removed];
 
-    responseFiles.forEach(async (responseFile: GithubResponseFile) => {
+    responseFiles.forEach((responseFile: GithubResponseFile) => {
       if (updateFileStatuses.includes(responseFile.status)) {
         handleFileUpdates(
           app,
@@ -100,13 +100,16 @@ export async function updateFilesInDb(
           defaultBranch
         );
       } else if (addFileStatuses.includes(responseFile.status)) {
+        app.log.info("response file before passing");
+        app.log.info(responseFile);
         handleFileAdditions(
           app,
           responseFile.filePath,
           installationId,
           owner,
           repoName,
-          defaultBranch
+          defaultBranch,
+          responseFile.previousFileName
         );
       } else if (removeFileStatuses.includes(responseFile.status)) {
         handleFileDeletions(
@@ -185,7 +188,8 @@ async function handleFileAdditions(
   installationId: number,
   owner: string,
   repoName: string,
-  defaultBranch: string
+  defaultBranch: string,
+  previousFileName?: string
 ) {
   // create new files in the db
   const file: FileType = await createFileTypeObject(
@@ -209,6 +213,26 @@ async function handleFileAdditions(
     TrainingFile.create(trainingFile),
     JobModel.create(job),
   ]);
+
+  /**
+   * It is important to delete the files that are
+   * renamed now to avoid unexpected errors during
+   * predicted score updations and to keep the DB
+   * clean from dead files(files which won't be queried at all)
+   */
+  app.log.info(`previous file name: ${previousFileName}`);
+  const filter = {
+    installationId: file.installationId,
+    owner: file.owner,
+    repoName: file.repoName,
+    filePath: previousFileName,
+  };
+  app.log.info(filter);
+
+  if (previousFileName !== undefined) {
+    app.log.info("Deleting old file which is now renamed");
+    await File.deleteOne(filter);
+  }
 }
 
 async function handleFileDeletions(

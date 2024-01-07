@@ -79,6 +79,7 @@ export async function getAllFilesFromPullRequest(
       sha: file.sha,
       filePath: file.filename,
       status: file.status,
+      previousFileName: file.previous_filename,
     }));
 
     app.log.info(
