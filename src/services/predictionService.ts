@@ -11,7 +11,6 @@ import MindsDB, {
 import { Job } from "../types/Job";
 import { getProbotInstance } from "../utils";
 import { FileType } from "../types/FileType";
-import fromExponential from "from-exponential";
 
 const {
   MONGODB_USER,
@@ -126,7 +125,7 @@ export async function queryMindDB(app: Probot, model: Model, job: Job) {
       filePath: data.filepath,
       commits: [], // won't update
       riskScore: data.riskscore_original, // won't update
-      predictedRiskScore: fromExponential(data.riskscore),
+      predictedRiskScore: data.riskscore,
     };
 
     return file;

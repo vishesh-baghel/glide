@@ -8,7 +8,7 @@ const FileSchema = new Schema({
   filePath: { type: String, required: true },
   commits: { type: [Commit], required: true },
   riskScore: { type: Number, required: true },
-  predictedRiskScore: { type: Number || String, required: false },
+  predictedRiskScore: { type: Number, required: false },
   createdAt: { type: Date, default: new Date() },
   updatedAt: { type: Date, default: new Date() },
 });

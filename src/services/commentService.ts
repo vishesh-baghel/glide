@@ -5,6 +5,7 @@ import {
   errorFallbackCommentForPROpenEvent,
   pullRequestOpenComment,
 } from "../constants/Comments";
+import fromExponential from "from-exponential";
 
 export async function createCommentOnGithub(
   app: Probot,
@@ -15,7 +16,11 @@ export async function createCommentOnGithub(
     body: comment,
   });
   await context.octokit.issues.createComment(issueComment);
-  app.log.info("Added comment on github");
+  app.log.info(
+    `Added comment on github for installationId: ${
+      context.payload.installation.id
+    } as: ${JSON.stringify(comment)}`
+  );
 }
 
 export async function constructComment(
@@ -23,26 +28,8 @@ export async function constructComment(
   files: FileScoreMap[]
 ): Promise<string> {
   const rows: string[][] = files.map((file: FileScoreMap) => {
-    let riskScore: number = file.score;
-    let predictedScore: number | string = file.predictedScore;
-    if (typeof predictedScore === "string") {
-      predictedScore = parseFloat(predictedScore);
-    } else if (predictedScore === undefined) {
-      app.log.warn(
-        `Predicted score is undefined for file: ${JSON.stringify(file)}`
-      );
-      predictedScore = 0;
-    } else if (file.score === undefined) {
-      app.log.warn(
-        `Predicted score is undefined for file: ${JSON.stringify(file)}`
-      );
-      riskScore = 0;
-    }
-    return [
-      `${file.fileName}`,
-      `${riskScore.toFixed(2)}`,
-      `${predictedScore.toFixed(2)}`, // todo: test it to check if it's working correctly after changing the type of predicted score
-    ];
+    const { fileName, score, predictedScore } = fileValidation(app, file);
+    return [`${fileName}`, `${score}`, `${predictedScore}`];
   });
 
   if (rows.length === 0 || rows === undefined || rows === null) {
@@ -52,4 +39,63 @@ export async function constructComment(
 
   const markdown = json2md(pullRequestOpenComment(rows));
   return markdown;
+}
+
+export function fileValidation(app: Probot, file: FileScoreMap) {
+  let fileName: string | undefined = file.fileName;
+  let riskScore: string | undefined = JSON.stringify(file.score);
+  let predictedRiskScore: string | undefined = JSON.stringify(
+    file.predictedScore
+  );
+  if (
+    fileName === undefined &&
+    riskScore === undefined &&
+    predictedRiskScore === undefined
+  ) {
+    app.log.warn(`All three fields are undefined: ${file}`);
+    return {
+      fileName: "N/A",
+      score: "0",
+      predictedScore: "0",
+    };
+  } else if (riskScore === undefined && predictedRiskScore === undefined) {
+    app.log.warn(`Two fields are undefined: ${JSON.stringify(file)}`);
+    return {
+      fileName: fileName,
+      score: "0.00",
+      predictedScore: "0.00",
+    };
+  } else if (riskScore === undefined) {
+    app.log.warn(`Risk score is undefined: ${JSON.stringify(file)}`);
+    return {
+      fileName: fileName,
+      score: "0.00",
+      predictedScore: numberToStringFormatter(file.predictedScore),
+    };
+  } else if (predictedRiskScore === undefined) {
+    app.log.warn(`Predicted score is undefined: ${JSON.stringify(file)}`);
+    return {
+      fileName: fileName,
+      score: numberToStringFormatter(file.score),
+      predictedScore: "0.00",
+    };
+  }
+
+  app.log.info(
+    `Formatting the riskScore and predictedRiskScore for file: ${JSON.stringify(
+      file
+    )}`
+  );
+  return {
+    fileName: fileName,
+    score: numberToStringFormatter(file.score),
+    predictedScore: numberToStringFormatter(file.predictedScore),
+  };
+}
+
+function numberToStringFormatter(number: number) {
+  let num: string = fromExponential(number);
+  const decimalIndex: number = num.indexOf(".") + 3;
+  const formattedNumber: string = num.slice(0, decimalIndex);
+  return formattedNumber;
 }

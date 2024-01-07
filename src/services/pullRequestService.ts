@@ -22,6 +22,10 @@ export async function processPullRequestOpenEvent(
   const { responseFiles, installationId, owner, repoName } =
     await extractFileDetailsFromPREventPayload(app, payload);
 
+  app.log.info(
+    `Received an pull request opened event from installationId: ${installationId}`
+  );
+
   let fileScoreMap: FileScoreMap[] = await createFileScoreMap(
     responseFiles,
     installationId,
@@ -47,6 +51,10 @@ export async function updateFilesInDb(
       defaultBranch,
       pullNumber,
     } = await extractFileDetailsFromPREventPayload(app, payload);
+
+    app.log.info(
+      `Received an pull request closed event from installationId: ${installationId}`
+    );
 
     // isMerged will only be true when a pull request is going to be
     // merged with the default branch
@@ -259,15 +267,12 @@ async function createFileScoreMap(
 ): Promise<FileScoreMap[]> {
   const fileScoreMap: FileScoreMap[] = await Promise.all(
     responseFiles.map(async (file: GithubResponseFile) => {
-      const fileObject: FileType | null = await File.findOne(
-        {
-          installationId: installationId,
-          owner: owner,
-          repoName: repoName,
-          filePath: file.filePath,
-        },
-        "riskScore"
-      );
+      const fileObject: FileType | null = await File.findOne({
+        installationId: installationId,
+        owner: owner,
+        repoName: repoName,
+        filePath: file.filePath,
+      });
 
       if (fileObject === null) {
         return {
