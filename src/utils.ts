@@ -21,10 +21,12 @@ export function getTimeDifference(date: Date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
     return 1;
   }
-
   const currentTime = new Date();
   const difference: number = currentTime.getTime() - date.getTime();
-  return difference;
+  const scalingFactor = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+  const normalizedDifference = difference / scalingFactor;
+
+  return normalizedDifference;
 }
 
 export function getTimeStampOlderThanMonths(monthsToReduce: number): string {

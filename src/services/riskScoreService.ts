@@ -12,6 +12,10 @@ export function calculateRiskScore(app: Probot, commits: Commit[]): number {
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
 
+      if (dateA.getTime() === dateB.getTime()) {
+        return a.sha.localeCompare(b.sha);
+      }
+
       return dateA.getTime() - dateB.getTime();
     });
 
@@ -28,11 +32,14 @@ export function calculateRiskScore(app: Probot, commits: Commit[]): number {
 
         hotSpotFactor += 1 / (1 + Math.exp(-12 * factor + 12));
       } else {
-        app.log.warn(`Invalid commit date ${JSON.stringify(commit)}`);
+        app.log.warn(`Invalid commit date`);
+        app.log.warn(commit);
       }
     });
 
-    return hotSpotFactor;
+    const riskScore = 1 / (1 + Math.exp(-12 * hotSpotFactor + 12));
+
+    return riskScore;
   } catch (error: any) {
     app.log.error(error);
     return 0;

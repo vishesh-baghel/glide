@@ -17,10 +17,9 @@ export async function createCommentOnGithub(
   });
   await context.octokit.issues.createComment(issueComment);
   app.log.info(
-    `Added comment on github for installationId: ${
-      context.payload.installation.id
-    } as: ${JSON.stringify(comment)}`
+    `Added comment on github for installationId: ${context.payload.installation.id} as:`
   );
+  app.log.info(comment);
 }
 
 export async function constructComment(
@@ -52,28 +51,32 @@ export function fileValidation(app: Probot, file: FileScoreMap) {
     riskScore === undefined &&
     predictedRiskScore === undefined
   ) {
-    app.log.warn(`All three fields are undefined: ${file}`);
+    app.log.warn(`All three fields are undefined`);
+    app.log.warn(file);
     return {
       fileName: "N/A",
       score: "0",
       predictedScore: "0",
     };
   } else if (riskScore === undefined && predictedRiskScore === undefined) {
-    app.log.warn(`Two fields are undefined: ${JSON.stringify(file)}`);
+    app.log.warn(`Two fields are undefined`);
+    app.log.warn(file);
     return {
       fileName: fileName,
       score: "0.00",
       predictedScore: "0.00",
     };
   } else if (riskScore === undefined) {
-    app.log.warn(`Risk score is undefined: ${JSON.stringify(file)}`);
+    app.log.warn(`Risk score is undefined`);
+    app.log.warn(file);
     return {
       fileName: fileName,
       score: "0.00",
       predictedScore: numberToStringFormatter(file.predictedScore),
     };
   } else if (predictedRiskScore === undefined) {
-    app.log.warn(`Predicted score is undefined: ${JSON.stringify(file)}`);
+    app.log.warn(`Predicted score is undefined`);
+    app.log.warn(file);
     return {
       fileName: fileName,
       score: numberToStringFormatter(file.score),
