@@ -28,7 +28,7 @@ function fetchDetailsWithInstallationId(
 
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await octokit.request(endpoint, parameters);
+      const data = await octokitApp.request(endpoint, parameters);
 
       resolve(data);
     } catch (err: any) {
