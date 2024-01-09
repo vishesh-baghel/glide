@@ -100,8 +100,6 @@ export async function updateFilesInDb(
           defaultBranch
         );
       } else if (addFileStatuses.includes(responseFile.status)) {
-        app.log.info("response file before passing");
-        app.log.info(responseFile);
         handleFileAdditions(
           app,
           responseFile.filePath,
