@@ -1,7 +1,9 @@
 import MindsDB from "mindsdb-js-sdk";
-import { Probot } from "probot";
+import { getProbotInstance } from "../auth";
 
-export async function connectMindsDB(app: Probot) {
+const app = getProbotInstance();
+
+export async function connectMindsDB() {
   return new Promise(async (resolve, reject) => {
     try {
       await MindsDB.connect({
@@ -18,6 +20,6 @@ export async function connectMindsDB(app: Probot) {
   });
 }
 
-export async function getMindsDBInstance(app: Probot) {
-  return await connectMindsDB(app);
+export async function getMindsDBInstance() {
+  return await connectMindsDB();
 }
