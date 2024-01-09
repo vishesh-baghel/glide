@@ -7,16 +7,6 @@ import { TrainingFileType } from "./types/TrainingFileType";
 import { JobName, JobStatus } from "./db/models/Job";
 import { Job } from "./types/Job";
 
-const { APP_ID, PRIVATE_KEY, WEBHOOK_SECRET } = process.env;
-
-export function getProbotInstance() {
-  return new Probot({
-    appId: APP_ID,
-    privateKey: PRIVATE_KEY,
-    secret: WEBHOOK_SECRET,
-  });
-}
-
 export function getTimeDifference(date: Date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
     return 1;

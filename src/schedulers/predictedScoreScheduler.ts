@@ -6,17 +6,19 @@ import {
   pollPredictorModelStatus,
   queryMindDB,
 } from "../services/predictionService";
-import { getProbotInstance } from "../utils";
+import { getProbotInstance } from "../auth";
 import { File } from "../db/models/File";
 import { FileType } from "../types/FileType";
 import { Model } from "mindsdb-js-sdk";
+
+const app = getProbotInstance();
 
 const jobBatchSize = 50;
 const intervalInMinutes = 5;
 const requestThrottleDelay = 1000;
 const scheduler = new ToadScheduler();
 
-export function predictedScoresUpdationScheduler(app: Probot) {
+export function predictedScoresUpdationScheduler() {
   try {
     /**
      * It is important to use async task here, because it may happen

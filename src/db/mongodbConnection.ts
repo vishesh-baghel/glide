@@ -1,11 +1,10 @@
 import mongoose from "mongoose";
-import { Probot } from "probot";
+import { getProbotInstance } from "../auth";
 
 const connectionString = process.env.MONGODB_CONNECTION_STRING;
+const app = getProbotInstance();
 
-export async function connectMongoDB(
-  app: Probot
-): Promise<mongoose.Connection> {
+export async function connectMongoDB(): Promise<mongoose.Connection> {
   try {
     if (!connectionString) {
       const errorMessage = "MongoDB connection string is not defined.";

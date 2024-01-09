@@ -9,7 +9,7 @@ import MindsDB, {
   TrainingOptions,
 } from "mindsdb-js-sdk";
 import { Job } from "../types/Job";
-import { getProbotInstance } from "../utils";
+import { getProbotInstance } from "../auth";
 import { FileType } from "../types/FileType";
 
 const {
@@ -20,6 +20,8 @@ const {
   MONGODB_DATABASE,
 } = process.env;
 
+const app = getProbotInstance();
+
 const databaseName = `mongo_datasource`;
 const projectName = `mindsdb`;
 const predictorName = `riskscore_predictor`;
@@ -27,8 +29,6 @@ const targetField = `riskScore`;
 const aggregationQuery = `test.trainingfiles.find({})`;
 const joinQuery = `mongo_datasource.trainingfiles`;
 const mindsdbBatchQuerySize = 10;
-
-const app = getProbotInstance();
 
 const regressionTrainingOptions: TrainingOptions = {
   select: aggregationQuery,
@@ -57,7 +57,7 @@ export async function retrainPredictorModel(app: Probot) {
     });
 }
 
-export async function trainPredictorModel(app: Probot) {
+export async function trainPredictorModel() {
   try {
     const models: Model[] = await MindsDB.Models.getAllModels(projectName);
     const modelNames = models.map((model: Model) => model.name);
