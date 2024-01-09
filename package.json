@@ -20,8 +20,10 @@
   "dependencies": {
     "@netlify/functions": "^2.4.1",
     "@octokit/app": "^14.0.2",
+    "@octokit/webhooks": "^12.0.11",
     "@probot/adapter-aws-lambda-serverless": "^3.0.4",
     "axios": "^1.6.3",
+    "eventsource": "^2.0.2",
     "from-exponential": "^1.1.1",
     "json2md": "^2.0.0",
     "markdown-table-ts": "^1.0.3",
@@ -34,6 +36,7 @@
     "toad-scheduler": "^3.0.0"
   },
   "devDependencies": {
+    "@types/eventsource": "^1.1.15",
     "@types/jest": "^29.0.0",
     "@types/json2md": "^1.5.4",
     "@types/node": "^18.0.0",

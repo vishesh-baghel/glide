@@ -25,24 +25,29 @@ import {
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
 import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
+import { receiveGithubEvents } from "./webhooks/octokit";
+import { Webhooks } from "@octokit/webhooks";
 
 const debugFlag: boolean = false;
 
 export async function main(app: Probot) {
   connectMongoDB(app).catch((error: any) => app.log.error(error));
   connectMindsDB(app).catch((error: any) => app.log.error(error));
-  handleAppInstallationCreatedEvents(app);
-  handlePullRequestOpenEvents(app);
-  handlePullRequestClosedEvents(app);
   trainPredictorModel(app);
-  debug(app);
   predictedScoresUpdationScheduler(app);
+
+  receiveGithubEvents().then((webhook: Webhooks) => {
+    // handleAppInstallationCreatedEvents(app, webhook);
+    handlePullRequestOpenEvents(app, webhook);
+    // handlePullRequestClosedEvents(app, webhook);
+  });
+  debug(app);
 }
 
-function handleAppInstallationCreatedEvents(app: Probot) {
+function handleAppInstallationCreatedEvents(app: Probot, webhook: Webhooks) {
   const events: any[] = [eventConfigs.app_installation.created];
 
-  listeningForGithubWebhookEvents(app, events)
+  listeningForGithubWebhookEvents(app, events, webhook)
     .then((context: any) => processRepositories(app, context.payload))
     .catch((error: any) => {
       app.log.error("Error while processing app installation event");
@@ -50,15 +55,22 @@ function handleAppInstallationCreatedEvents(app: Probot) {
     });
 }
 
-function handlePullRequestOpenEvents(app: Probot) {
+export type WebhookAndContext = {
+  context: any;
+  webhook: any;
+};
+
+function handlePullRequestOpenEvents(app: Probot, webhook: Webhooks) {
   const events: any[] = [eventConfigs.pull_request.opened];
 
-  listeningForGithubWebhookEvents(app, events)
-    .then(async (context: any) => {
+  listeningForGithubWebhookEvents(app, events, webhook)
+    .then(async (res: WebhookAndContext) => {
+      const context = res.context;
+      const webhook = res.webhook;
       try {
         const files: FileScoreMap[] = await processPullRequestOpenEvent(
           app,
-          context.payload
+          webhook.payload
         );
         const comment = await constructComment(app, files);
         createCommentOnGithub(app, comment, context);
@@ -75,10 +87,10 @@ function handlePullRequestOpenEvents(app: Probot) {
     });
 }
 
-function handlePullRequestClosedEvents(app: Probot) {
+function handlePullRequestClosedEvents(app: Probot, webhook: Webhooks) {
   const events: any[] = [eventConfigs.pull_request.closed];
 
-  listeningForGithubWebhookEvents(app, events)
+  listeningForGithubWebhookEvents(app, events, webhook)
     .then(async (context: any) => {
       try {
         const areFilesUpdated: boolean = await updateFilesInDb(
