@@ -1,6 +1,6 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "./fetch";
+import { fetchDetails } from "./fetch";
 import { FilePath } from "../types/FilePath";
 import { GithubResponseFile } from "../types/GithubResponseFile";
 
@@ -12,9 +12,8 @@ export async function getAllFiles(
   defaultBranch: string
 ): Promise<FilePath[]> {
   try {
-    const response: any = await fetchDetailsWithInstallationId(
+    const response: any = await fetchDetails(
       app,
-      installationId,
       configs.all_files.endpoint_git_tree,
       {
         owner: owner,
@@ -63,9 +62,8 @@ export async function getAllFilesFromPullRequest(
   pullNumber: number
 ) {
   try {
-    const response: any = await fetchDetailsWithInstallationId(
+    const response: any = await fetchDetails(
       app,
-      installationId,
       configs.all_files.endpoint_pull_request,
       {
         owner: owner,
@@ -83,13 +81,13 @@ export async function getAllFilesFromPullRequest(
     }));
 
     app.log.info(
-      `Total ${files.length} files fetched from github for pull request(number:${pullNumber}) of the repository: [${owner}/${repoName}]`
+      `Total ${files.length} files fetched from github for pull request(number:${pullNumber}) of the repository: [${owner}/${repoName}] and installationId: [${installationId}]`
     );
 
     return files;
   } catch (error: any) {
     app.log.error(
-      `Error occurred while fetching all files for repository: [${owner}/${repoName}] and pull request number: [${pullNumber}]`
+      `Error occurred while fetching all files for repository: [${owner}/${repoName}] and pull request number: [${pullNumber}] and installationId: [${installationId}]`
     );
     app.log.error(error);
     return [];

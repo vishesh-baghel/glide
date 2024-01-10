@@ -1,6 +1,6 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
-import { fetchDetailsWithInstallationId } from "./fetch";
+import { fetchDetails } from "./fetch";
 import { Commit } from "../types/Commit";
 import { getTimeStampOlderThanMonths } from "../utils";
 
@@ -26,9 +26,8 @@ export async function getAllCommits(
     let allCommits: Commit[] = [];
 
     while (true) {
-      const response: any = await fetchDetailsWithInstallationId(
+      const response: any = await fetchDetails(
         app,
-        installationId,
         configs.all_commits.endpoint,
         {
           owner: owner,
