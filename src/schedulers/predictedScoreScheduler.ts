@@ -178,9 +178,6 @@ async function checkIfJobIsAlreadyComplete(app: Probot, job: Job) {
   }
 
   if (jobObj?.status === JobStatus.Complete) {
-    app.log.info(
-      `Skipping querying mindsdb, because the job status is complete already`
-    );
     return true;
   }
   return false;
