@@ -36,7 +36,6 @@ export async function processPullRequestOpenEvent(
 
   // for showing top 10 files sorted in descending order of risk scores
   const files = fileScoreMap.sort((a, b) => b.score - a.score).slice(0, 10);
-  app.log.info(files);
 
   return files;
 }

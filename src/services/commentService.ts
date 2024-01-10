@@ -31,12 +31,16 @@ export async function constructComment(
     return [`${fileName}`, `${score}`, `${predictedScore}`];
   });
 
+  const rawScores = files.map((file: FileScoreMap) => {
+    return [`${file.fileName}`, `${file.score}`, `${file.predictedScore}`];
+  });
+
   if (rows.length === 0 || rows === undefined || rows === null) {
     app.log.error("File rows are invalid. cannot construct comment");
     return errorFallbackCommentForPROpenEvent();
   }
 
-  const markdown = json2md(pullRequestOpenComment(rows));
+  const markdown = json2md(pullRequestOpenComment(rows, rawScores));
   return markdown;
 }
 

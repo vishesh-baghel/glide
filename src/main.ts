@@ -30,14 +30,19 @@ const app = getProbotInstance();
 const debugFlag: boolean = false;
 
 export async function main(probotApp: Probot) {
-  connectMongoDB().catch((error: any) => app.log.error(error));
-  connectMindsDB().catch((error: any) => app.log.error(error));
-  handleAppInstallationCreatedEvents(probotApp);
-  handlePullRequestOpenEvents(probotApp);
-  handlePullRequestClosedEvents(probotApp);
-  trainPredictorModel();
-  predictedScoresUpdationScheduler();
-  debug();
+  try {
+    connectMongoDB().catch((error: any) => app.log.error(error));
+    connectMindsDB().catch((error: any) => app.log.error(error));
+    handleAppInstallationCreatedEvents(probotApp);
+    handlePullRequestOpenEvents(probotApp);
+    handlePullRequestClosedEvents(probotApp);
+    trainPredictorModel();
+    predictedScoresUpdationScheduler();
+    debug();
+  } catch (error: any) {
+    app.log.error("Error occured in main function");
+    app.log.error(error);
+  }
 }
 
 function handleAppInstallationCreatedEvents(app: Probot) {
