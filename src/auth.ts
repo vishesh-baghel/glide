@@ -8,7 +8,7 @@ const { APP_ID, PRIVATE_KEY, WEBHOOK_SECRET, GITHUB_ACCESS_TOKEN } =
 export function getProbotInstance() {
   return new Probot({
     appId: APP_ID,
-    privateKey: PRIVATE_KEY,
+    privateKey: PRIVATE_KEY?.replace(/\\n/g, "\n"),
     secret: WEBHOOK_SECRET,
   });
 }
@@ -24,7 +24,7 @@ export function octokitAuthWithAppId(installationId: number): Octokit {
     authStrategy: createAppAuth,
     auth: {
       appId: APP_ID,
-      privateKey: PRIVATE_KEY,
+      privateKey: PRIVATE_KEY?.replace(/\\n/g, "\n"),
       installationId: installationId,
     },
   });
