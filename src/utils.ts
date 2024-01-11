@@ -1,9 +1,8 @@
 import { Probot } from "probot";
-import { FileType } from "./types/FileType";
+import { FileType, TrainingFileType } from "./types/File";
 import { Commit } from "./types/Commit";
 import { getAllCommits } from "./fetch/fetchCommits";
 import { calculateRiskScore } from "./services/riskScoreService";
-import { TrainingFileType } from "./types/TrainingFileType";
 import { JobName, JobStatus } from "./db/models/Job";
 import { Job } from "./types/Job";
 
@@ -18,7 +17,10 @@ export function getTimeDifference(date: Date) {
 
   return normalizedDifference;
 }
-
+/**
+ * @param monthsToReduce number of months to reduce from current date
+ * @returns returns the time stamp in ISO string
+ */
 export function getTimeStampOlderThanMonths(monthsToReduce: number): string {
   let currentTime = new Date();
   currentTime.setMonth(currentTime.getMonth() - monthsToReduce);
@@ -26,8 +28,8 @@ export function getTimeStampOlderThanMonths(monthsToReduce: number): string {
 }
 
 /**
- * For updation, we would need to recalculate the risk scores,
- * For creation, we would need to calculate the scores for the first time.
+ * Creates a file object by fetching all the recent commits
+ *
  * @param app
  * @param filePath
  * @param installationId

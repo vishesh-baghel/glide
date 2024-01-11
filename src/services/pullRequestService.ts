@@ -1,11 +1,11 @@
 import { Probot } from "probot";
 import { getAllFilesFromPullRequest } from "../fetch/fetchFiles";
-import { GithubResponseFile } from "../types/GithubResponseFile";
+import { GithubResponseFile } from "../types/File";
 import { File } from "../db/models/File";
-import { FileScoreMap } from "../types/FileScoreMap";
-import { FileType } from "../types/FileType";
+import { FileScoreMap } from "../types/File";
+import { FileType } from "../types/File";
 import { FileStatus } from "../constants/GithubContants";
-import { TrainingFileType } from "../types/TrainingFileType";
+import { TrainingFileType } from "../types/File";
 import { TrainingFile } from "../db/models/TrainingFile";
 import { Job } from "../types/Job";
 import { JobModel, JobName, JobStatus } from "../db/models/Job";

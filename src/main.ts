@@ -1,20 +1,17 @@
 import { Probot } from "probot";
-import { connectMongoDB } from "./db/mongodbConnection";
-import { fetchDetails, fetchDetailsWithInstallationId } from "./fetch/fetch";
+import { connectMongoDB } from "./db/connections/mongodbConnection";
 import { processRepositories } from "./services/repositoryService";
-import configs from "./configs/fetch.configs.json";
 import eventConfigs from "./configs/github.webhook.event.configs.json";
 import {
-  constructComment,
+  constructMarkdownComment,
   createCommentOnGithub,
 } from "./services/commentService";
 import {
   processPullRequestOpenEvent,
   updateFilesInDb,
 } from "./services/pullRequestService";
-import { FileScoreMap } from "./types/FileScoreMap";
-import { isValidFilePath } from "./fetch/fetchFiles";
-import { connectMindsDB } from "./db/mindsdbConnection";
+import { FileScoreMap } from "./types/File";
+import { connectMindsDB } from "./db/connections/mindsdbConnection";
 import {
   retrainPredictorModel,
   trainPredictorModel,
@@ -27,8 +24,15 @@ import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreSch
 import { getProbotInstance } from "./auth";
 
 const app = getProbotInstance();
-const debugFlag: boolean = false;
 
+/**
+ * This function is responsible for initializing the app and
+ * delegating all the events received from github to various
+ * modules. Probot handles the event routing, so we just need
+ * to add listeners for all the events that we want to process.
+ *
+ * @param probotApp default probot instance
+ */
 export async function main(probotApp: Probot) {
   try {
     connectMongoDB().catch((error: any) => app.log.error(error));
@@ -38,13 +42,18 @@ export async function main(probotApp: Probot) {
     handlePullRequestClosedEvents(probotApp);
     trainPredictorModel();
     predictedScoresUpdationScheduler();
-    debug();
   } catch (error: any) {
     app.log.error("Error occured in main function");
     app.log.error(error);
   }
 }
 
+/**
+ * App installation event is published when a user
+ * installs the app on one or more repositories.
+ * Read more about installation webhooks {@link https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation | here}
+ * @param app default probot instance
+ */
 function handleAppInstallationCreatedEvents(app: Probot) {
   const events: any[] = [eventConfigs.app_installation.created];
 
@@ -59,6 +68,13 @@ function handleAppInstallationCreatedEvents(app: Probot) {
   });
 }
 
+/**
+ * Pull request open event is published when a user opens
+ * a pull request on any repository. Read more about pull request
+ * webhooks {@link https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=opened#pull_request | here}
+ *
+ * @param app default probot instance
+ */
 function handlePullRequestOpenEvents(app: Probot) {
   const events: any[] = [eventConfigs.pull_request.opened];
 
@@ -71,8 +87,16 @@ function handlePullRequestOpenEvents(app: Probot) {
         app,
         context.payload
       );
-      const comment = await constructComment(app, files);
-      createCommentOnGithub(app, comment, context);
+      const comment = await constructMarkdownComment(app, files);
+      const installationId = context.payload.installation.id;
+      const pullRequestNumber = context.payload.number;
+      const repoName = context.pull_request.base.repo.full_name;
+      const logParams = {
+        installationId: installationId,
+        pullRequestNumber: pullRequestNumber,
+        repoName: repoName,
+      };
+      createCommentOnGithub(app, comment, context, logParams);
     } catch (error: any) {
       app.log.error("Error while processing pull request opened event");
       app.log.error(error);
@@ -82,6 +106,13 @@ function handlePullRequestOpenEvents(app: Probot) {
   });
 }
 
+/**
+ * Pull request closed events are published when a user
+ * closes a pull request on any repository. Read more about
+ * pull request webhooks {@link https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=opened#pull_request | here}
+ *
+ * @param app default probot instance
+ */
 function handlePullRequestClosedEvents(app: Probot) {
   const events: any[] = [eventConfigs.pull_request.closed];
 
@@ -97,7 +128,15 @@ function handlePullRequestClosedEvents(app: Probot) {
       if (areFilesUpdated) {
         const comment =
           "Risk scores are updated for all the files modified in this pull request.";
-        createCommentOnGithub(app, comment, context);
+        const installationId = context.payload.installation.id;
+        const pullRequestNumber = context.payload.number;
+        const repoName = context.pull_request.base.repo.full_name;
+        const logParams = {
+          installationId: installationId,
+          pullRequestNumber: pullRequestNumber,
+          repoName: repoName,
+        };
+        createCommentOnGithub(app, comment, context, logParams);
       }
       retrainPredictorModel(app);
 
@@ -109,46 +148,4 @@ function handlePullRequestClosedEvents(app: Probot) {
       createCommentOnGithub(app, comment, context);
     }
   });
-}
-
-function debug() {
-  if (debugFlag === true) {
-    fetchDetails(app, "GET /repos/{owner}/{repo}", {
-      owner: "vishesh-baghel",
-      repo: "lombok",
-    }).then((response: any) => {
-      app.log.info(response);
-    });
-
-    fetchDetailsWithInstallationId(
-      app,
-      45486421,
-      configs.all_files.endpoint_pull_request,
-      {
-        owner: "vishesh-baghel",
-        repo: "code-review-bot",
-        pull_number: 2,
-      }
-    )
-      .then((response: any) => {
-        type ResponseFile = {
-          sha: string;
-          filePath: string;
-          status: string;
-        };
-        const data: any[] = response.data;
-
-        const files: ResponseFile[] = data.map((file: any) => ({
-          sha: file.sha,
-          filePath: file.filename,
-          status: file.status,
-        }));
-        app.log.info(files);
-      })
-      .catch((error: any) => {
-        app.log.error(error);
-      });
-
-    app.log.info(`false: ${isValidFilePath("src/setupTests.ts")}`);
-  }
 }

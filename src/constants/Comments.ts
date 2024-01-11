@@ -42,8 +42,7 @@ export function pullRequestOpenComment(
 
 /**
  * Function to generate a fallback comment for a pull request open event in case of an error.
- *
- * @returns A string with a reassuring message about the encountered issue.
+ * @returns A string with information about the error
  */
 export function errorFallbackCommentForPROpenEvent(): string {
   return "We are currently experiencing technical difficulties. Rest assured, we will display the risk scores the next time you open a pull request.";
@@ -51,8 +50,7 @@ export function errorFallbackCommentForPROpenEvent(): string {
 
 /**
  * Function to generate a fallback comment for a pull request closed event in case of an error.
- *
- * @returns A string with information about the error and assurance of upcoming risk score updates.
+ * @returns A string with information about the error.
  */
 export function errorFallbackCommentForPRClosedEvent(): string {
   return "An error occurred while updating the files modified in this closed pull request. No need to worry; we have a backup for all the files in this pull request. The risk scores will be updated soon.";
