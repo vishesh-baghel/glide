@@ -10,7 +10,7 @@ import MindsDB, {
 } from "mindsdb-js-sdk";
 import { Job } from "../types/Job";
 import { getProbotInstance } from "../auth";
-import { FileType } from "../types/FileType";
+import { FileType } from "../types/File";
 
 const {
   MONGODB_USER,
@@ -33,7 +33,6 @@ const mindsdbBatchQuerySize = 10;
 const regressionTrainingOptions: TrainingOptions = {
   select: aggregationQuery,
   integration: databaseName,
-  // orderBy: "createdAt",
   groupBy: "installationId",
   window: 100, // How many rows in the past to use when making a future prediction.
   horizon: 10, // How many rows in the future to forecast.
@@ -47,7 +46,7 @@ export async function retrainPredictorModel(app: Probot) {
     regressionTrainingOptions
   )
     .then(() => {
-      app.log.info(`[${predictorName}] model is retrained successfully`);
+      app.log.info(`Started [${predictorName}] model retraining successfully`);
     })
     .catch((error: any) => {
       app.log.error(

@@ -1,5 +1,5 @@
 import { Probot } from "probot";
-import { FileScoreMap } from "../types/FileScoreMap";
+import { FileScoreMap } from "../types/File";
 import json2md from "json2md";
 import {
   errorFallbackCommentForPROpenEvent,
@@ -10,19 +10,20 @@ import fromExponential from "from-exponential";
 export async function createCommentOnGithub(
   app: Probot,
   comment: string,
-  context: any
+  context: any,
+  logParams?: any
 ) {
+  const { installationId, pullRequestNumber, repoName } = logParams;
   const issueComment = context.issue({
     body: comment,
   });
   await context.octokit.issues.createComment(issueComment);
   app.log.info(
-    `Added comment on github for installationId: ${context.payload.installation.id} as:`
+    `Added comment on github for installationId: ${installationId}, ref: [${repoName}/${pullRequestNumber}]`
   );
-  app.log.info(comment);
 }
 
-export async function constructComment(
+export async function constructMarkdownComment(
   app: Probot,
   files: FileScoreMap[]
 ): Promise<string> {

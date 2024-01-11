@@ -1,8 +1,8 @@
 import { Probot } from "probot";
 import configs from "../configs/fetch.configs.json";
 import { fetchDetails } from "./fetch";
-import { FilePath } from "../types/FilePath";
-import { GithubResponseFile } from "../types/GithubResponseFile";
+import { FilePath } from "../types/File";
+import { GithubResponseFile } from "../types/File";
 
 export async function getAllFiles(
   app: Probot,

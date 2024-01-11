@@ -8,7 +8,7 @@ import {
 } from "../services/predictionService";
 import { getProbotInstance } from "../auth";
 import { File } from "../db/models/File";
-import { FileType } from "../types/FileType";
+import { FileType } from "../types/File";
 import { Model } from "mindsdb-js-sdk";
 
 const app = getProbotInstance();
