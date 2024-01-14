@@ -18,7 +18,7 @@ Glidee-bot helps developers save time and effort while doing code reviews. It pr
 
 ![image](./src/assets/glide-bot-pr-open.png)
 
-**Glidee-bot adds this comment, whenever a pull request i s closed**
+**Glidee-bot adds this comment, whenever a pull request is closed**
 
 ![image](./src/assets/glide-bot-pr-closed.png)
 
