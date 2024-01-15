@@ -12,6 +12,8 @@ Glidee-bot helps developers save time and effort while doing code reviews. It pr
 
 - Glidee-bot recalculates and updates the risk scores for all the files in real-time. The current and predicted risk scores are updated whenever a pull request is closed
 
+- If you want to dig deeper, read this [article](https://visheshbaghel.hashnode.dev/how-to-build-an-automated-bug-predicting-bot-with-zero-ai-knowledge) that explains how glidee-bot works in detail
+
 ## See Glidee-bot in action!
 
 **Glidee-bot adds this comment whenever a new pull request is opened**
