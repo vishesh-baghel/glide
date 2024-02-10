@@ -2,6 +2,9 @@
 
 Glidee-bot helps developers save time and effort while doing code reviews. It provides a curated list of files with `current` and `predicted` risk scores arranged in order of decreasing risk whenever a new pull request is opened.
 
+This project got 3rd position in the MindsDB hackathon organized by hashnode:
+![winner](./src/assets/hackathon-winners.png)
+
 ### How Glidee-bot works?
 
 - A risk score is given to each file in a repository based on its probability of having bugs in the future. Glidee-bot calculates a `current` risk score based on an algorithm.
