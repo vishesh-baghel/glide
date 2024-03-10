@@ -13,7 +13,7 @@ export async function connectMongoDB(): Promise<mongoose.Connection> {
     }
 
     const db = await mongoose.connect(connectionString);
-    app.log.info("Connected to the database successfully");
+    app.log.info("Connected to the mongodb database successfully");
 
     return db.connection;
   } catch (error: any) {

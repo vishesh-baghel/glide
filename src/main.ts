@@ -1,27 +1,30 @@
 import { Probot } from "probot";
-import { connectMongoDB } from "./db/connections/mongodbConnection";
-import { processRepositories } from "./services/repositoryService";
+import { connectMongoDB } from "./db/connections/mongodb";
+import { processRepositories } from "./services/repository";
 import eventConfigs from "./configs/github.webhook.event.configs.json";
 import {
   constructMarkdownComment,
   createCommentOnGithub,
-} from "./services/commentService";
+} from "./services/comment";
 import {
   processPullRequestOpenEvent,
   updateFilesInDb,
-} from "./services/pullRequestService";
+} from "./services/pullRequest";
 import { FileScoreMap } from "./types/File";
-import { connectMindsDB } from "./db/connections/mindsdbConnection";
+import { connectMindsDB } from "./db/connections/mindsdb";
 import {
   retrainPredictorModel,
   trainPredictorModel,
-} from "./services/predictionService";
+} from "./services/prediction";
 import {
   errorFallbackCommentForPRClosedEvent,
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
 import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
 import { getProbotInstance } from "./auth";
+import { connectChromaDB } from "./db/connections/chroma";
+import { getAllContent } from "./fetch/fetchContent";
+import { chunker } from "./services/chunker";
 
 const app = getProbotInstance();
 
@@ -37,11 +40,13 @@ export async function main(probotApp: Probot) {
   try {
     connectMongoDB().catch((error: any) => app.log.error(error));
     connectMindsDB().catch((error: any) => app.log.error(error));
+    connectChromaDB().catch((error: any) => app.log.error(error));
     handleAppInstallationCreatedEvents(probotApp);
     handlePullRequestOpenEvents(probotApp);
     handlePullRequestClosedEvents(probotApp);
     trainPredictorModel();
     predictedScoresUpdationScheduler();
+    chunker();
   } catch (error: any) {
     app.log.error("Error occured in main function");
     app.log.error(error);
@@ -90,7 +95,7 @@ function handlePullRequestOpenEvents(app: Probot) {
       const comment = await constructMarkdownComment(app, files);
       const installationId = context.payload.installation.id;
       const pullRequestNumber = context.payload.number;
-      const repoName = context.pull_request.base.repo.full_name;
+      const repoName = context.payload.pull_request.base.repo.full_name;
       const logParams = {
         installationId: installationId,
         pullRequestNumber: pullRequestNumber,

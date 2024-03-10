@@ -2,7 +2,7 @@ import { Probot } from "probot";
 import { FileType, TrainingFileType } from "./types/File";
 import { Commit } from "./types/Commit";
 import { getAllCommits } from "./fetch/fetchCommits";
-import { calculateRiskScore } from "./services/riskScoreService";
+import { calculateRiskScore } from "./services/riskScore";
 import { JobName, JobStatus } from "./db/models/Job";
 import { Job } from "./types/Job";
 

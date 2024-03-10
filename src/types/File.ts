@@ -42,3 +42,10 @@ export type TrainingFileType = {
   numberOfCommits: number;
   riskScore: number;
 };
+
+export type FileContent = {
+  owner: string;
+  repoName: string;
+  filePath: string;
+  content: string;
+};

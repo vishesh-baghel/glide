@@ -19,22 +19,12 @@ export function pullRequestOpenComment(
     { h2: "Attention: Review Required for the Following Files" },
     {
       blockquote:
-        "This curated list is designed to help you focus on files that may require you to pay more attention while reviewing the code. Files are prioritized based on their risk scores. A zero 'current risk score' or a zero 'predicted risk score' may indicate a new file or insufficient historical data. Your attention to these files is highly appreciated!",
+        "This curated list is designed to help you focus on files that may require you to pay more attention while reviewing the code. Files are prioritized based on their risk scores. A zero 'current risk score' may indicate a new file or insufficient historical data. Your attention to these files is highly appreciated!",
     },
     {
       table: {
-        headers: ["File Path", "Current Risk Score", "Predicted Risk Score"],
+        headers: ["File Path", "Risk Score"],
         rows: rows,
-      },
-    },
-    { h3: "For Demo Purposes Only" },
-    {
-      p: "The above comment reflects the real scenario, where scores are truncated to only two decimal places. For the demo, raw scores are included to provide insight into how the scores are calculated.",
-    },
-    {
-      table: {
-        headers: ["File Path", "Current Risk Score", "Predicted Risk Score"],
-        rows: rawScores,
       },
     },
   ];

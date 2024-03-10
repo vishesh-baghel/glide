@@ -2,14 +2,14 @@ import { Probot } from "probot";
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
 import { JobModel, JobName, JobStatus } from "../db/models/Job";
 import { Job } from "../types/Job";
-import {
-  pollPredictorModelStatus,
-  queryMindDB,
-} from "../services/predictionService";
+import { pollPredictorModelStatus, queryMindDB } from "../services/prediction";
 import { getProbotInstance } from "../auth";
 import { File } from "../db/models/File";
 import { FileType } from "../types/File";
 import { Model } from "mindsdb-js-sdk";
+import featureConfigs from "../configs/app.configs.json";
+
+const predictedScoreFeatureFlag = featureConfigs.feature_flags.predictedScore;
 
 const app = getProbotInstance();
 
@@ -19,6 +19,8 @@ const requestThrottleDelay = 1000;
 const scheduler = new ToadScheduler();
 
 export function predictedScoresUpdationScheduler() {
+  if (predictedScoreFeatureFlag == false) return;
+
   try {
     /**
      * It is important to use async task here, because it may happen
@@ -73,7 +75,7 @@ async function handleAppInstallationJob(app: Probot, jobs: Job[]) {
     }
     app.log.info(`Started app installation job at: [${new Date()}]`);
 
-    const predictorModel: Model = await pollPredictorModelStatus();
+    const predictorModel: Model | undefined = await pollPredictorModelStatus();
     const promises = jobs.map(async (job) => {
       const isJobCompleted = await checkIfJobIsAlreadyComplete(app, job);
       if (!isJobCompleted) {
@@ -105,7 +107,7 @@ async function handleFileUpdationJob(app: Probot, jobs: Job[]) {
     }
     app.log.info(`Started file updation job at: [${new Date()}]`);
 
-    const predictorModel: Model = await pollPredictorModelStatus();
+    const predictorModel: Model | undefined = await pollPredictorModelStatus();
     const promises = jobs.map(async (job) => {
       const isJobCompleted = await checkIfJobIsAlreadyComplete(app, job);
       if (!isJobCompleted) {
@@ -127,16 +129,16 @@ async function handleFileUpdationJob(app: Probot, jobs: Job[]) {
   }
 }
 
-async function updateFileAndJobModels(file: FileType) {
+async function updateFileAndJobModels(file: FileType | undefined) {
   const filter = {
-    installationId: file.installationId,
-    owner: file.owner,
-    repoName: file.repoName,
-    filePath: file.filePath,
+    installationId: file?.installationId,
+    owner: file?.owner,
+    repoName: file?.repoName,
+    filePath: file?.filePath,
   };
 
   const update = {
-    predictedRiskScore: file.predictedRiskScore,
+    predictedRiskScore: file?.predictedRiskScore,
     updatedAt: new Date(),
   };
 
