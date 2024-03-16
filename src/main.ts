@@ -46,7 +46,6 @@ export async function main(probotApp: Probot) {
     handlePullRequestClosedEvents(probotApp);
     trainPredictorModel();
     predictedScoresUpdationScheduler();
-    chunker();
   } catch (error: any) {
     app.log.error("Error occured in main function");
     app.log.error(error);

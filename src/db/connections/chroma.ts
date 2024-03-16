@@ -30,6 +30,7 @@ export async function connectChromaDB() {
 export async function createVectorCollection(name: string) {
   try {
     client.getCollection({ name: name }).catch(() => {
+      // only create a collection when it's not already present
       client.createCollection({
         name: name,
         embeddingFunction: getEmbedder(),
@@ -43,7 +44,11 @@ export async function createVectorCollection(name: string) {
 }
 
 export async function getVectorCollection(name: string) {
-  return await client.getCollection({
+  // replacing getCollection() to getOrCreateCollection because chroma requires
+  // us to provide a embeddings function while getting a collection. I am not sure
+  // exactly why they are doing it?
+  return await client.getOrCreateCollection({
     name: name,
+    embeddingFunction: getEmbedder(),
   });
 }

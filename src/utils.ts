@@ -97,3 +97,56 @@ export function createJobTypeObject(
     scheduledAt: new Date(),
   };
 }
+
+export function detectLanguage(filePath: string) {
+  const javascriptExtensions = [".js", ".cjs", ".mjs"];
+  const javaExtensions = [".java", ".class"];
+  const cppExtensions = [".cpp", ".h", ".hpp", ".cc", ".cxx"];
+  const goExtensions = [".go"];
+  const phpExtensions = [".php"];
+  const protoExtensions = [".proto"];
+  const pythonExtensions = [".py", ".pyc", ".pyd", ".pyo", ".pyw", ".pyz"];
+  const rstExtensions = [".rst"];
+  const rubyExtensions = [".ruby"];
+  const rustExtensions = [".rs"];
+  const scalaExtensions = [".scala"];
+  const swiftExtensions = [".swift"];
+  const markdownExtensions = [".md"];
+  const latexExtensions = [".tex"];
+  const htmlExtensions = [".html", ".htm"];
+
+  switch (true) {
+    case javascriptExtensions.some((extension) => filePath.endsWith(extension)):
+      return "js";
+    case javaExtensions.some((extension) => filePath.endsWith(extension)):
+      return "java";
+    case cppExtensions.some((extension) => filePath.endsWith(extension)):
+      return "cpp";
+    case goExtensions.some((extension) => filePath.endsWith(extension)):
+      return "go";
+    case phpExtensions.some((extension) => filePath.endsWith(extension)):
+      return "php";
+    case protoExtensions.some((extension) => filePath.endsWith(extension)):
+      return "proto";
+    case pythonExtensions.some((extension) => filePath.endsWith(extension)):
+      return "python";
+    case rstExtensions.some((extension) => filePath.endsWith(extension)):
+      return "rst";
+    case rubyExtensions.some((extension) => filePath.endsWith(extension)):
+      return "ruby";
+    case rustExtensions.some((extension) => filePath.endsWith(extension)):
+      return "rust";
+    case scalaExtensions.some((extension) => filePath.endsWith(extension)):
+      return "scala";
+    case swiftExtensions.some((extension) => filePath.endsWith(extension)):
+      return "swift";
+    case markdownExtensions.some((extension) => filePath.endsWith(extension)):
+      return "markdown";
+    case latexExtensions.some((extension) => filePath.endsWith(extension)):
+      return "latex";
+    case htmlExtensions.some((extension) => filePath.endsWith(extension)):
+      return "html";
+    default:
+      return "sol";
+  }
+}

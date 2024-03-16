@@ -15,6 +15,7 @@ import { Job } from "../types/Job";
 import { JobModel, JobName, JobStatus } from "../db/models/Job";
 import { createVectorCollection } from "../db/connections/chroma";
 import { getAllContent } from "../fetch/fetchContent";
+import { saveEmbeddings } from "./embeddings";
 
 export async function processRepositories(
   app: Probot,
@@ -32,7 +33,7 @@ export async function processRepositories(
   );
 
   repos.map((repo: any) =>
-    createVectorCollection(`${installationId}_${repo.name}`)
+    createVectorCollection(`${installationId}.${repo.name}`)
   );
 
   for (let i = 0; i < repos.length; i += batchSize) {
@@ -142,8 +143,8 @@ async function processRepositoryBatch(
 
         await Promise.all([
           File.insertMany(files),
-          TrainingFile.insertMany(trainingFiles),
-          JobModel.insertMany(jobs),
+          // TrainingFile.insertMany(trainingFiles),
+          // JobModel.insertMany(jobs),
         ]);
 
         const allContents: Promise<FileContent>[] = files.map(
@@ -160,6 +161,8 @@ async function processRepositoryBatch(
         );
 
         const fileContents: FileContent[] = await Promise.all(allContents);
+
+        saveEmbeddings(fileContents, installationId, repo.name);
 
         app.log.info(
           `Completed the processing of [${owner}/${repo.name}] repository successfully for installation id: [${installationId}]`
