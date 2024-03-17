@@ -19,6 +19,7 @@
   "all_files": {
     "endpoint_git_tree": "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
     "endpoint_pull_request": "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+    "endpoint_file_content": "GET /repos/{owner}/{repo}/contents/{path}",
     "default_branch": "main",
     "file_array_limit": 5000
   },

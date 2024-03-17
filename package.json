@@ -18,12 +18,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "@langchain/community": "^0.0.34",
+    "@langchain/openai": "^0.0.15",
     "@netlify/functions": "^2.4.1",
     "@octokit/app": "^14.0.2",
     "@probot/adapter-aws-lambda-serverless": "^3.0.4",
     "axios": "^1.6.3",
+    "chromadb": "^1.8.1",
     "from-exponential": "^1.1.1",
     "json2md": "^2.0.0",
+    "langchain": "^0.1.25",
     "markdown-table-ts": "^1.0.3",
     "mindsdb-js-sdk": "^2.3.0",
     "mongoose": "^8.0.3",
@@ -34,6 +38,7 @@
     "toad-scheduler": "^3.0.0"
   },
   "devDependencies": {
+    "@gradio/client": "^0.13.0",
     "@types/jest": "^29.0.0",
     "@types/json2md": "^1.5.4",
     "@types/node": "^18.0.0",

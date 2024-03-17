@@ -1,0 +1,78 @@
+{
+  "action": "created",
+  "installation": {
+    "id": 48260486,
+    "account": {
+      "login": "vishesh-baghel",
+      "id": 71141511,
+      "node_id": "MDQ6VXNlcjcxMTQxNTEx",
+      "avatar_url": "https://avatars.githubusercontent.com/u/71141511?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/vishesh-baghel",
+      "html_url": "https://github.com/vishesh-baghel",
+      "followers_url": "https://api.github.com/users/vishesh-baghel/followers",
+      "following_url": "https://api.github.com/users/vishesh-baghel/following{/other_user}",
+      "gists_url": "https://api.github.com/users/vishesh-baghel/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/vishesh-baghel/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/vishesh-baghel/subscriptions",
+      "organizations_url": "https://api.github.com/users/vishesh-baghel/orgs",
+      "repos_url": "https://api.github.com/users/vishesh-baghel/repos",
+      "events_url": "https://api.github.com/users/vishesh-baghel/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/vishesh-baghel/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "repository_selection": "all",
+    "access_tokens_url": "https://api.github.com/app/installations/48260486/access_tokens",
+    "repositories_url": "https://api.github.com/installation/repositories",
+    "html_url": "https://github.com/settings/installations/48260486",
+    "app_id": 724323,
+    "app_slug": "glidee-bot",
+    "target_id": 71141511,
+    "target_type": "User",
+    "permissions": {
+      "issues": "write",
+      "contents": "read",
+      "metadata": "read",
+      "pull_requests": "write"
+    },
+    "events": ["issues", "pull_request"],
+    "created_at": "2024-03-10T10:04:37.000+05:30",
+    "updated_at": "2024-03-10T10:04:37.000+05:30",
+    "single_file_name": null,
+    "has_multiple_single_files": false,
+    "single_file_paths": [],
+    "suspended_by": null,
+    "suspended_at": null
+  },
+  "repositories": [
+    {
+      "id": 733121099,
+      "node_id": "R_kgDOK7KKSw",
+      "name": "glide",
+      "full_name": "vishesh-baghel/glide",
+      "private": false
+    }
+  ],
+  "requester": null,
+  "sender": {
+    "login": "vishesh-baghel",
+    "id": 71141511,
+    "node_id": "MDQ6VXNlcjcxMTQxNTEx",
+    "avatar_url": "https://avatars.githubusercontent.com/u/71141511?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/vishesh-baghel",
+    "html_url": "https://github.com/vishesh-baghel",
+    "followers_url": "https://api.github.com/users/vishesh-baghel/followers",
+    "following_url": "https://api.github.com/users/vishesh-baghel/following{/other_user}",
+    "gists_url": "https://api.github.com/users/vishesh-baghel/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/vishesh-baghel/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/vishesh-baghel/subscriptions",
+    "organizations_url": "https://api.github.com/users/vishesh-baghel/orgs",
+    "repos_url": "https://api.github.com/users/vishesh-baghel/repos",
+    "events_url": "https://api.github.com/users/vishesh-baghel/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/vishesh-baghel/received_events",
+    "type": "User",
+    "site_admin": false
+  }
+}

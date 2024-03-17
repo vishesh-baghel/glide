@@ -1,9 +1,14 @@
 import MindsDB from "mindsdb-js-sdk";
 import { getProbotInstance } from "../../auth";
+import featureConfigs from "../../configs/app.configs.json";
+
+const predictedScoreFeatureFlag = featureConfigs.feature_flags.predictedScore;
 
 const app = getProbotInstance();
 
 export async function connectMindsDB() {
+  if (predictedScoreFeatureFlag == false) return;
+
   return new Promise(async (resolve, reject) => {
     try {
       await MindsDB.connect({

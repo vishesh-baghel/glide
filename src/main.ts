@@ -1,27 +1,29 @@
 import { Probot } from "probot";
-import { connectMongoDB } from "./db/connections/mongodbConnection";
-import { processRepositories } from "./services/repositoryService";
+import { connectMongoDB } from "./db/connections/mongodb";
+import { processRepositories } from "./services/repository";
 import eventConfigs from "./configs/github.webhook.event.configs.json";
 import {
   constructMarkdownComment,
   createCommentOnGithub,
-} from "./services/commentService";
+} from "./services/comment";
 import {
   processPullRequestOpenEvent,
   updateFilesInDb,
-} from "./services/pullRequestService";
+} from "./services/pullRequest";
 import { FileScoreMap } from "./types/File";
-import { connectMindsDB } from "./db/connections/mindsdbConnection";
+import { connectMindsDB } from "./db/connections/mindsdb";
 import {
   retrainPredictorModel,
   trainPredictorModel,
-} from "./services/predictionService";
+} from "./services/prediction";
 import {
   errorFallbackCommentForPRClosedEvent,
   errorFallbackCommentForPROpenEvent,
 } from "./constants/Comments";
 import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
 import { getProbotInstance } from "./auth";
+import { connectChromaDB } from "./db/connections/chroma";
+import { generateReviews } from "./services/review";
 
 const app = getProbotInstance();
 
@@ -37,6 +39,7 @@ export async function main(probotApp: Probot) {
   try {
     connectMongoDB().catch((error: any) => app.log.error(error));
     connectMindsDB().catch((error: any) => app.log.error(error));
+    connectChromaDB().catch((error: any) => app.log.error(error));
     handleAppInstallationCreatedEvents(probotApp);
     handlePullRequestOpenEvents(probotApp);
     handlePullRequestClosedEvents(probotApp);
@@ -83,14 +86,20 @@ function handlePullRequestOpenEvents(app: Probot) {
       `Received an event with event id: ${context.id}, name: ${context.name} and action: ${context.payload.action}`
     );
     try {
-      const files: FileScoreMap[] = await processPullRequestOpenEvent(
+      const extractedData = await processPullRequestOpenEvent(
         app,
         context.payload
       );
-      const comment = await constructMarkdownComment(app, files);
+      const allFiles = extractedData.allFiles;
+      const top10Files = extractedData.top10Files;
+      const owner = extractedData.owner;
+      const pullRequestBranch = extractedData.pullRequestBranch;
       const installationId = context.payload.installation.id;
       const pullRequestNumber = context.payload.number;
-      const repoName = context.pull_request.base.repo.full_name;
+      const repoName = context.payload.pull_request.base.repo.full_name;
+      const comment = await constructMarkdownComment(app, top10Files);
+
+      generateReviews(allFiles, repoName, owner, pullRequestBranch);
       const logParams = {
         installationId: installationId,
         pullRequestNumber: pullRequestNumber,
