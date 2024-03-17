@@ -99,7 +99,7 @@ export function createJobTypeObject(
 }
 
 export function detectLanguage(filePath: string) {
-  const javascriptExtensions = [".js", ".cjs", ".mjs"];
+  const javascriptExtensions = [".js", ".cjs", ".mjs", ".ts", ".jsx", ".tsx"];
   const javaExtensions = [".java", ".class"];
   const cppExtensions = [".cpp", ".h", ".hpp", ".cc", ".cxx"];
   const goExtensions = [".go"];

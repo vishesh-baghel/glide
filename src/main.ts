@@ -23,8 +23,7 @@ import {
 import { predictedScoresUpdationScheduler } from "./schedulers/predictedScoreScheduler";
 import { getProbotInstance } from "./auth";
 import { connectChromaDB } from "./db/connections/chroma";
-import { getAllContent } from "./fetch/fetchContent";
-import { chunker } from "./services/chunker";
+import { generateReviews } from "./services/review";
 
 const app = getProbotInstance();
 
@@ -87,14 +86,20 @@ function handlePullRequestOpenEvents(app: Probot) {
       `Received an event with event id: ${context.id}, name: ${context.name} and action: ${context.payload.action}`
     );
     try {
-      const files: FileScoreMap[] = await processPullRequestOpenEvent(
+      const extractedData = await processPullRequestOpenEvent(
         app,
         context.payload
       );
-      const comment = await constructMarkdownComment(app, files);
+      const allFiles = extractedData.allFiles;
+      const top10Files = extractedData.top10Files;
+      const owner = extractedData.owner;
+      const pullRequestBranch = extractedData.pullRequestBranch;
       const installationId = context.payload.installation.id;
       const pullRequestNumber = context.payload.number;
       const repoName = context.payload.pull_request.base.repo.full_name;
+      const comment = await constructMarkdownComment(app, top10Files);
+
+      generateReviews(allFiles, repoName, owner, pullRequestBranch);
       const logParams = {
         installationId: installationId,
         pullRequestNumber: pullRequestNumber,

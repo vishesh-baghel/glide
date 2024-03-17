@@ -15,11 +15,8 @@ import {
   createTrainingFileTypeObject,
 } from "../utils";
 
-export async function processPullRequestOpenEvent(
-  app: Probot,
-  payload: any
-): Promise<FileScoreMap[]> {
-  const { responseFiles, installationId, owner, repoName } =
+export async function processPullRequestOpenEvent(app: Probot, payload: any) {
+  const { responseFiles, installationId, owner, repoName, pullRequestBranch } =
     await extractFileDetailsFromPREventPayload(app, payload);
 
   app.log.info(
@@ -37,7 +34,12 @@ export async function processPullRequestOpenEvent(
   // for showing top 10 files sorted in descending order of risk scores
   const files = fileScoreMap.sort((a, b) => b.score - a.score).slice(0, 10);
 
-  return files;
+  return {
+    allFiles: fileScoreMap,
+    top10Files: files,
+    owner: owner,
+    pullRequestBranch: pullRequestBranch,
+  };
 }
 
 export async function updateFilesInDb(
@@ -257,6 +259,7 @@ async function extractFileDetailsFromPREventPayload(app: Probot, payload: any) {
   const pullNumber: number = pull_request.number;
   const isMerged: boolean = pull_request.merged;
   const defaultBranch: string = repository.default_branch;
+  const pullRequestBranch: string = pull_request.head.ref;
 
   const repoFullName: string = pull_request.base.repo.full_name;
   const installationId: number = installation.id;
@@ -281,6 +284,7 @@ async function extractFileDetailsFromPREventPayload(app: Probot, payload: any) {
     pullNumber,
     repoName,
     defaultBranch,
+    pullRequestBranch,
   };
 }
 

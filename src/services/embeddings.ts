@@ -19,11 +19,18 @@ export async function saveEmbeddings(
   });
   const chunkedCode = await Promise.all(chunkedFileCodePromises);
 
+  app.log.info(chunkedCode);
+
   chunkedCode.map((codeFile) => {
     codeFile.chunkedCode.map((code) => {
       collection
         .add({
           ids: `${installationId}.${repoName}.${codeFile.filePath}`,
+          metadatas: {
+            installationId: installationId,
+            repoName: repoName,
+            filePath: codeFile.filePath,
+          },
           documents: code.pageContent,
         })
         .catch((error: any) => {
@@ -36,7 +43,7 @@ export async function saveEmbeddings(
   });
   collection
     .peek({
-      limit: 10,
+      limit: 2,
     })
     .then((response) => {
       app.log.info("vector embeddings for glide");

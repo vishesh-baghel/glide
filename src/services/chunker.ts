@@ -7,7 +7,7 @@ import { detectLanguage } from "../utils";
 export async function chunker(file: string, filePath: string) {
   const language: SupportedTextSplitterLanguage = detectLanguage(filePath);
   const splitter = RecursiveCharacterTextSplitter.fromLanguage(language, {
-    chunkSize: 300,
+    chunkSize: 1500,
     chunkOverlap: 0,
   });
 

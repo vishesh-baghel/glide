@@ -161,7 +161,6 @@ async function processRepositoryBatch(
         );
 
         const fileContents: FileContent[] = await Promise.all(allContents);
-
         saveEmbeddings(fileContents, installationId, repo.name);
 
         app.log.info(
